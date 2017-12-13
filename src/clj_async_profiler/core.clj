@@ -109,11 +109,6 @@
                  new-vm))]
     (.loadAgentPath vm (async-profiler-agent) command-string)))
 
-;; (defn list-options [pid]
-;;   (let [f (tmp-internal-file "list" "txt")]
-;;     (attach-agent pid (make-command-string "list" {:file f}))
-;;     (println (slurp f))))
-
 (defn start
   "Start the profiler for the specified process ID. If `pid` is not provided,
   target the current process. Available options:
@@ -180,4 +175,14 @@
   [port]
   (server/start-server port (io/file temp-directory "results")))
 
-#_(serve-files 8080)
+(comment
+
+  (defn list-options [pid]
+    (let [f (tmp-internal-file "list" "txt")]
+      (attach-agent pid (make-command-string "list" {:file f}))
+      (println (slurp f))))
+
+  (serve-files 8080))
+
+
+
