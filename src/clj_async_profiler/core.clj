@@ -90,6 +90,7 @@
     "start" (format "%s,event=%s,file=%s,interval=%s,collapsed"
                     command (:event options) (:file options)
                     (:interval options 1000000))
+   "status" (format "%s,file=%s,collapsed" command (:file options))
     "stop" (format "%s,file=%s,collapsed" command (:file options))))
 
 (def ^:private virtual-machines (atom {}))
@@ -125,6 +126,25 @@
                         "start" (assoc options :file f, :event "cpu")))
      (slurp f))))
 
+(defn status
+  "Get agent status"
+  ([] (status (get-self-pid)))
+  ([pid]
+   (let [f (tmp-results-file "status" "txt")]
+     (attach-agent pid (make-command-string "status" {:file f}))
+     (slurp f))))
+
+(defn is-running?
+   "checks if the agent is running"
+   [pid]
+   (.contains (status pid) "is running"))
+
+(defn persist-flamegraph [f {generate-flamegraph? :generate-flamegraph? :or {generate-flamegraph? true}}]
+  (when generate-flamegraph?
+       (let [flamegraph-file (tmp-results-file "flamegraph" "svg")]
+         (run-flamegraph-script f flamegraph-file)
+         flamegraph-file)))
+
 (defn stop
   "Stop the profiler for the specified process ID. and save the results into a
   temporary file. Return the file object with the results. If `pid` is not
@@ -134,13 +154,11 @@
                           the profile (default: true)"
   ([options] (stop (get-self-pid) options))
   ([pid options]
-   (let [f (tmp-results-file "profile" "txt")]
-     (attach-agent pid (make-command-string "stop" {:file f}))
-     (if (:generate-flamegraph? options true)
-       (let [flamegraph-file (tmp-results-file "flamegraph" "svg")]
-         (run-flamegraph-script f flamegraph-file)
-         flamegraph-file)
-       f))))
+    (when (is-running? pid)
+       (let [f (tmp-results-file "profile" "txt")]
+         (attach-agent pid (make-command-string "stop" {:file f}))
+         (persist-flamegraph f options)))
+     ))
 
 (defn profile-for
   "Run the profiler for the specified duration. Return a future that will deliver
