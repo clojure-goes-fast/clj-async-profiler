@@ -67,8 +67,14 @@
 
 (defn run-flamegraph-script
   "Run Flamegraph script on the provided stacks file, rendering the SVG result."
-  [in-stacks-file out-svg-file]
-  (let [p (sh/sh "perl" (flamegraph-script) "--colors=java" (str in-stacks-file))]
+  [in-stacks-file out-svg-file {:keys [min-width reverse? icicle?]
+                                :or {icicle? reverse?}}]
+  (let [args (flatten ["perl" (flamegraph-script) "--colors=java"
+                       (when min-width [(str "--minwidth=" min-width)])
+                       (if reverse? ["--reverse"] [])
+                       (if icicle? ["--inverted"] [])
+                       (str in-stacks-file)])
+        p (apply sh/sh args)]
     (if (zero? (:exit p))
       (let [f (io/file out-svg-file)]
         (io/copy (:out p) f)
@@ -131,14 +137,21 @@
   provided, target the current process. Available options:
 
   :generate-flamegraph? - if true, generate flamegraph in the same directory as
-                          the profile (default: true)"
+                          the profile (default: true)
+  :min-width - minimum width in pixels for a frame to be shown on a flamegraph.
+               Use this if the resulting flamegraph is too big and hangs your
+               browser (default: nil, recommended: 1-5)
+  :reverse? - if true, generate the reverse flamegraph which grows from callees
+              up to callers (default: false)
+  :icicle? - if true, invert the flamegraph upside down (default: false for
+             regular flamegraph, true for reverse)"
   ([options] (stop (get-self-pid) options))
   ([pid options]
    (let [f (tmp-results-file "profile" "txt")]
      (attach-agent pid (make-command-string "stop" {:file f}))
      (if (:generate-flamegraph? options true)
        (let [flamegraph-file (tmp-results-file "flamegraph" "svg")]
-         (run-flamegraph-script f flamegraph-file)
+         (run-flamegraph-script f flamegraph-file options)
          flamegraph-file)
        f))))
 
