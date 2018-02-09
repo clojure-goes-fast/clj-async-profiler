@@ -24,11 +24,9 @@ code-paths to be identified quickly and accurately.
 _clj-async-profiler is only supported on GNU/Linux and MacOS. See
 https://github.com/jvm-profiling-tools/async-profiler#supported-platforms._
 
-Add to your dependencies:
+Add `com.clojure-goes-fast/clj-async-profiler` to your dependencies:
 
-```clojure
-[com.clojure-goes-fast/clj-async-profiler "0.1.0"]
-```
+[![](https://clojars.org/com.clojure-goes-fast/clj-async-profiler/latest-version.svg)](https://clojars.org/com.clojure-goes-fast/clj-async-profiler)
 
 _Note: if you are using GNU/Linux and see stackframes like
 `/usr/lib/.../libjvm.so`, it means that you have to install JDK debug symbols.
