@@ -3,17 +3,20 @@
             [clojure.java.io :as io]
             [clojure.java.shell :as sh])
   (:import java.lang.management.ManagementFactory
-           java.net.URL
+           [java.net URL URLClassLoader]
            java.text.SimpleDateFormat
            java.util.Date))
 
 ;; Initialization and unpacking
 
-(defonce ^:private tools-jar-loaded
-  (let [tools-jar (format "file:///%s/../lib/tools.jar"
-                          (System/getProperty "java.home"))
-        cl (.getContextClassLoader (Thread/currentThread))]
-    (.addURL cl (URL. tools-jar))))
+(defonce ^:private tools-jar-classloader
+  (let [file (io/file (System/getProperty "java.home"))
+        file (if (.equalsIgnoreCase (.getName file) "jre")
+               (.getParentFile file)
+               file)
+        file (io/file file "lib" "tools.jar")
+        urls (into-array URL [(io/as-url file)])]
+    (URLClassLoader/newInstance urls)))
 
 (def flamegraph-script-path (atom nil))
 (def async-profiler-agent-path (atom nil))
@@ -102,9 +105,9 @@
 (def ^:private virtual-machines (atom {}))
 
 (defn- mk-vm [pid]
-  (let [method (.getDeclaredMethod (resolve 'com.sun.tools.attach.VirtualMachine)
-                                   "attach"
-                                   (into-array Class [String]))]
+  (let [vm-class (Class/forName "com.sun.tools.attach.VirtualMachine"
+                                false tools-jar-classloader)
+        method (.getDeclaredMethod vm-class "attach" (into-array Class [String]))]
     (.invoke method nil (object-array [pid]))))
 
 (defn attach-agent [pid command-string]
