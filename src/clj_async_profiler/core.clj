@@ -115,8 +115,15 @@
         vm (or (@virtual-machines pid)
                (let [new-vm (mk-vm pid)]
                  (swap! virtual-machines assoc pid new-vm)
-                 new-vm))]
-    (.loadAgentPath vm (async-profiler-agent) command-string)))
+                 new-vm))
+        agent-so (async-profiler-agent)]
+    (try (.loadAgentPath vm agent-so command-string)
+         (catch Exception ex
+           ;; If agent failed to load, try to load the library with System/load
+           ;; which hopefully throws a more informative exception.
+           (System/load agent-so)
+           ;; But if it didn't throw the original one.
+           (throw ex)))))
 
 ;; (defn list-options [pid]
 ;;   (let [f (tmp-internal-file "list" "txt")]
