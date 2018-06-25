@@ -19,18 +19,36 @@ generate [flame graphs](http://www.brendangregg.com/flamegraphs.html). Flame
 graphs are a visualization of profiled software, allowing the most frequent
 code-paths to be identified quickly and accurately.
 
+## Preparation
+
+clj-async-profiler is only supported on GNU/Linux and MacOS. See
+https://github.com/jvm-profiling-tools/async-profiler#supported-platforms.
+
+If you run clj-async-profiler on MacOS, no extra steps are required.
+
+If you are running GNU/Linux, you need to do the following:
+
+1. Ensure that `perf_event_paranoid` is set to 1:
+
+```
+$ cat /proc/sys/kernel/perf_event_paranoid
+1
+```
+
+If it prints 2, it means you are running a newer Linux kernel. You have to set
+it to 1 to allow async-profiler to use kernel profiling data.
+
+```
+$ echo 1 | sudo tee /proc/sys/kernel/perf_event_paranoid
+```
+
+[See also](https://github.com/jvm-profiling-tools/async-profiler#basic-usage).
+
+2. If you see stackframes like `/usr/lib/.../libjvm.so`, it means that you have
+to install JDK debug symbols. E.g., on Ubuntu that would be the package
+`openjdk-8-dbg`.
+
 ## Usage
-
-_clj-async-profiler is only supported on GNU/Linux and MacOS. See
-https://github.com/jvm-profiling-tools/async-profiler#supported-platforms._
-
-Add `com.clojure-goes-fast/clj-async-profiler` to your dependencies:
-
-[![](https://clojars.org/com.clojure-goes-fast/clj-async-profiler/latest-version.svg)](https://clojars.org/com.clojure-goes-fast/clj-async-profiler)
-
-_Note: if you are using GNU/Linux and see stackframes like
-`/usr/lib/.../libjvm.so`, it means that you have to install JDK debug symbols.
-E.g., on Ubuntu that would be the package `openjdk-8-dbg`._
 
 clj-async-profiler exposes an all-in-one facade for generating profiling flame
 graphs. The most common usage scenario looks like this:
