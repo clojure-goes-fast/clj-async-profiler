@@ -125,10 +125,15 @@
            ;; But if it didn't throw the original one.
            (throw ex)))))
 
-;; (defn list-options [pid]
-;;   (let [f (tmp-internal-file "list" "txt")]
-;;     (attach-agent pid (make-command-string "list" {:file f}))
-;;     (println (slurp f))))
+(defn list-event-types
+  "Print all event types that can be sampled by the profiler. If `pid` is not
+  provided, target the current process. `options` is not currently used."
+  ([options]
+   (list-event-types (get-self-pid) {}))
+  ([pid options]
+   (let [f (tmp-internal-file "list" "txt")]
+     (attach-agent pid (make-command-string "list" {:file f}))
+     (println (slurp f)))))
 
 (defn start
   "Start the profiler for the specified process ID. If `pid` is not provided,
