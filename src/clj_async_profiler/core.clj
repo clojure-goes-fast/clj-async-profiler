@@ -2,21 +2,29 @@
   (:require [clj-async-profiler.server :as server]
             [clojure.java.io :as io]
             [clojure.java.shell :as sh])
-  (:import java.lang.management.ManagementFactory
-           [java.net URL URLClassLoader]
+  (:import clojure.lang.DynamicClassLoader
+           java.lang.management.ManagementFactory
            java.text.SimpleDateFormat
            java.util.Date))
 
 ;; Initialization and unpacking
 
 (defonce ^:private tools-jar-classloader
-  (let [file (io/file (System/getProperty "java.home"))
-        file (if (.equalsIgnoreCase (.getName file) "jre")
-               (.getParentFile file)
-               file)
-        file (io/file file "lib" "tools.jar")
-        urls (into-array URL [(io/as-url file)])]
-    (URLClassLoader/newInstance urls)))
+  ;; First, find top-level Clojure classloader.
+  (let [^DynamicClassLoader loader
+        (loop [loader (.getContextClassLoader (Thread/currentThread))]
+          (let [parent (.getParent loader)]
+            (if (instance? DynamicClassLoader parent)
+              (recur parent)
+              loader)))]
+    ;; Loader found, add tools.jar to it
+    (let [file (io/file (System/getProperty "java.home"))
+          file (if (.equalsIgnoreCase (.getName file) "jre")
+                 (.getParentFile file)
+                 file)
+          file (io/file file "lib" "tools.jar")]
+      (.addURL loader (io/as-url file)))
+    loader))
 
 (def flamegraph-script-path (atom nil))
 (def async-profiler-agent-path (atom nil))
