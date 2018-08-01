@@ -50,6 +50,10 @@ to install JDK debug symbols. E.g., on Ubuntu that would be the package
 
 ## Usage
 
+Add `com.clojure-goes-fast/clj-async-profiler` to your dependencies:
+
+[![](https://clojars.org/com.clojure-goes-fast/clj-async-profiler/latest-version.svg)](https://clojars.org/com.clojure-goes-fast/clj-async-profiler)
+
 clj-async-profiler exposes an all-in-one facade for generating profiling flame
 graphs. The most common usage scenario looks like this:
 
