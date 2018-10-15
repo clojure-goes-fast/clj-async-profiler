@@ -8,7 +8,7 @@
                     "http://www.eclipse.org/legal/epl-v10.html"}}
  push {:repo "clojars"})
 
-(set-env! :resource-paths #{"res" "src"}
+(set-env! :resource-paths #{"vendor" "src"}
           :source-paths   #{"src"}
           :dependencies   '[[org.clojure/clojure "1.9.0" :scope "provided"]])
 
