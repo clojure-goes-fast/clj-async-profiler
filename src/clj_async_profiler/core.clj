@@ -8,7 +8,26 @@
            java.text.SimpleDateFormat
            java.util.Date))
 
-;; Initialization and unpacking
+;;; Temp file machinery
+
+(defonce ^:private temp-directory
+  (let [root (io/file "/tmp" "clj-async-profiler")]
+    (.mkdirs (io/file root "results"))
+    (.mkdirs (io/file root "internal"))
+    root))
+
+(defonce ^:private ^SimpleDateFormat date-format
+  (SimpleDateFormat. "yyyy-MM-dd-HH-mm-ss"))
+
+(defn- tmp-internal-file [prefix extension]
+  (io/file temp-directory "internal"
+           (format "%s-%s.%s" prefix (.format date-format (Date.)) extension)))
+
+(defn- tmp-results-file [prefix extension]
+  (io/file temp-directory "results"
+           (format "%s-%s.%s" prefix (.format date-format (Date.)) extension)))
+
+;;; Dynamic attach initialization
 
 (defn- tools-jar-url []
   (let [file (io/file (System/getProperty "java.home"))
@@ -60,7 +79,7 @@
        (add-url-to-classloader-reflective loader tools-jar))
      loader)))
 
-(defn get-virtualmachine-class []
+(defn- get-virtualmachine-class []
   ;; In JDK9+, the class is already present, no extra steps required.
   (try (resolve 'com.sun.tools.attach.VirtualMachine)
        ;; In earlier JDKs, load tools.jar and get the class from there.
@@ -68,14 +87,9 @@
          (Class/forName "com.sun.tools.attach.VirtualMachine"
                         false @tools-jar-classloader))))
 
-(def flamegraph-script-path (atom nil))
-(def async-profiler-agent-path (atom nil))
+;;; Agent unpacking
 
-(defonce ^:private temp-directory
-  (let [root (io/file "/tmp" "clj-async-profiler")]
-    (.mkdirs (io/file root "results"))
-    (.mkdirs (io/file root "internal"))
-    root))
+(def async-profiler-agent-path (atom nil))
 
 (defn- macos? []
   (re-find #"(?i)mac" (System/getProperty "os.name")))
@@ -86,7 +100,7 @@
       (io/copy (io/input-stream (io/resource resource-name)) path))
     (.getAbsolutePath path)))
 
-(defn async-profiler-agent
+(defn- async-profiler-agent
   "Get the async profiler agent file. If the value of `async-profiler-agent-path`
   is not `nil`, return it, otherwise extract the .so from the JAR."
   []
@@ -95,28 +109,15 @@
                          "libasyncProfiler-darwin.so"
                          "libasyncProfiler-linux.so"))))
 
-(defn flamegraph-script
+;;; Flamegraph generation
+
+(def flamegraph-script-path (atom nil))
+
+(defn- flamegraph-script
   "Get the flamegraph.pl file. If the value of `flamegraph-script-path` is not
   nil, return it, otherwise extract the script from the JAR."
   []
   (or @flamegraph-script-path (unpack-from-jar "flamegraph.pl")))
-
-
-;;; Temp file machinery
-
-(defonce ^:private ^SimpleDateFormat date-format
-  (SimpleDateFormat. "yyyy-MM-dd-HH-mm-ss"))
-
-(defn- tmp-internal-file [prefix extension]
-  (io/file temp-directory "internal"
-           (format "%s-%s.%s" prefix (.format date-format (Date.)) extension)))
-
-(defn- tmp-results-file [prefix extension]
-  (io/file temp-directory "results"
-           (format "%s-%s.%s" prefix (.format date-format (Date.)) extension)))
-
-
-;;; Flamegraph generation
 
 (defn run-flamegraph-script
   "Run Flamegraph script on the provided stacks file, rendering the SVG result."
@@ -134,7 +135,6 @@
         f)
       (do (io/copy (:err p) *err*)
           (binding [*err* *out*] (flush))))))
-
 
 ;;; Profiling
 
