@@ -197,6 +197,26 @@
    (println "[pid options] arity is deprecated. Add :pid to options map instead.")
    (stop (assoc options :pid pid))))
 
+(defmacro profile
+  "Profile the execution of `body`. If the first argument is a map, treat it as
+  options. For available options, see `clj-async-profiler.core/start` and
+  `clj-async-profiler.core/stop`. `:pid` option is ignored, current process is
+  always profiled. Additional options:
+
+  :return-file - if true, return the generated flamegraph file, otherwise return
+                 the value returned by `body` (default: false - return value)"
+  [options? & body]
+  (let [[options body] (if (map? options?)
+                         [(dissoc options? :pid) body]
+                         [{} (cons options? body)])]
+    `(try (let [options# ~options
+                _# (start options#)
+                ret# (try ~@body
+                          (finally (stop options#)))
+                f# (stop options#)]
+            (if (:return-file options#)
+              f# ret#)))))
+
 (defn profile-for
   "Run the profiler for the specified duration. Return a future that will deliver
   the file with the results. For available options, see `clj-async-profiler.core/start` and
