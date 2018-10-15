@@ -94,6 +94,9 @@
 (defn- macos? []
   (re-find #"(?i)mac" (System/getProperty "os.name")))
 
+(defn- arm? []
+  (re-find #"(?i)arm" (System/getProperty "os.arch")))
+
 (defn- unpack-from-jar [resource-name]
   (let [path (io/file temp-directory resource-name)]
     (when-not (.exists path)
@@ -107,7 +110,9 @@
   (or @async-profiler-agent-path
       (unpack-from-jar (if (macos?)
                          "libasyncProfiler-darwin.so"
-                         "libasyncProfiler-linux.so"))))
+                         (if (arm?)
+                           "libasyncProfiler-linux-arm.so"
+                           "libasyncProfiler-linux.so")))))
 
 ;;; Flamegraph generation
 
