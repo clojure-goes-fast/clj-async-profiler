@@ -134,32 +134,44 @@
            (throw ex)))))
 
 (defn list-event-types
-  "Print all event types that can be sampled by the profiler. If `pid` is not
-  provided, target the current process. `options` is not currently used."
+  "Print all event types that can be sampled by the profiler. Available options:
+
+  :pid - process to attach to (default: current process)"
+  ([] (list-event-types {}))
+
   ([options]
-   (list-event-types (get-self-pid) {}))
-  ([pid options]
-   (let [f (tmp-internal-file "list" "txt")]
+   (let [pid (or (:pid options) (get-self-pid))
+         f (tmp-internal-file "list" "txt")]
      (attach-agent pid (make-command-string "list" {:file f}))
-     (println (slurp f)))))
+     (println (slurp f))))
+
+  ([pid options]
+   (println "[pid options] arity is deprecated. Add :pid to options map instead.")
+   (list-event-types (assoc options :pid pid))))
 
 (defn start
-  "Start the profiler for the specified process ID. If `pid` is not provided,
-  target the current process. Available options:
+  "Start the profiler for the specified process ID. Available options:
 
+  :pid - process to attach to (default: current process)
   :interval - sampling interval in nanoseconds (default: 1000000 - 1ms)"
-  ([options] (start (get-self-pid) options))
-  ([pid options]
-   (let [f (tmp-internal-file "start" "txt")]
+  ([] (start {}))
+
+  ([options]
+   (let [pid (or (:pid options) (get-self-pid))
+         f (tmp-internal-file "start" "txt")]
      (attach-agent pid (make-command-string
                         "start" (assoc options :file f, :event "cpu")))
-     (slurp f))))
+     (slurp f)))
+
+  ([pid options]
+   (println "[pid options] arity is deprecated. Add :pid to options map instead.")
+   (start (assoc options :pid pid))))
 
 (defn stop
   "Stop the profiler for the specified process ID. and save the results into a
-  temporary file. Return the file object with the results. If `pid` is not
-  provided, target the current process. Available options:
+  temporary file. Return the file object with the results. Available options:
 
+  :pid - process to attach to (default: current process)
   :generate-flamegraph? - if true, generate flamegraph in the same directory as
                           the profile (default: true)
   :min-width - minimum width in pixels for a frame to be shown on a flamegraph.
@@ -169,30 +181,40 @@
               up to callers (default: false)
   :icicle? - if true, invert the flamegraph upside down (default: false for
              regular flamegraph, true for reverse)"
-  ([options] (stop (get-self-pid) options))
-  ([pid options]
-   (let [f (tmp-results-file "profile" "txt")]
+  ([] (stop {}))
+
+  ([options]
+   (let [pid (or (:pid options) (get-self-pid))
+         f (tmp-results-file "profile" "txt")]
      (attach-agent pid (make-command-string "stop" {:file f}))
      (if (:generate-flamegraph? options true)
        (let [flamegraph-file (tmp-results-file "flamegraph" "svg")]
          (run-flamegraph-script f flamegraph-file options)
          flamegraph-file)
-       f))))
+       f)))
+
+  ([pid options]
+   (println "[pid options] arity is deprecated. Add :pid to options map instead.")
+   (stop (assoc options :pid pid))))
 
 (defn profile-for
   "Run the profiler for the specified duration. Return a future that will deliver
-  the file with the results. If `pid` is not provided, target the current
-  process. For available options, see `clj-async-profiler.core/start` and
+  the file with the results. For available options, see `clj-async-profiler.core/start` and
   `clj-async-profiler.core/stop`."
+  ([duration-in-seconds]
+   (profile-for duration-in-seconds {}))
+
   ([duration-in-seconds options]
-   (profile-for (get-self-pid) duration-in-seconds options))
-  ([pid duration-in-seconds options]
-   (println (start pid options))
+   (println (start options))
    (future
      (let [deadline (+ (.getTime (Date.)) (* duration-in-seconds 1000))]
        (while (< (.getTime (Date.)) deadline)
          (Thread/sleep 1000))
-       (stop pid options)))))
+       (stop options))))
+
+  ([pid duration-in-seconds options]
+   (println "[pid duration options] arity is deprecated. Add :pid to options map instead.")
+   (profile-for duration-in-seconds (assoc options :pid pid))))
 
 (defn serve-files
   "Start a simple webserver of the results directory on the provided port."
