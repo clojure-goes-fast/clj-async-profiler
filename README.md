@@ -12,7 +12,9 @@ and [FlameGraph](https://github.com/brendangregg/FlameGraph).
 async-profiler is a low overhead sampling profiler for JVM that does not suffer
 from the safepoint bias problem. It operates by attaching a native Java agent to
 a running JVM process and collecting the stack traces samples by using
-HotSpot-specific APIs.
+HotSpot-specific APIs. Current version of async-profiler that is used by
+clj-async-profiler is
+[1.4](https://github.com/jvm-profiling-tools/async-profiler/blob/master/CHANGELOG.md#14---2018-06-24).
 
 FlameGraph is a set of scripts to
 generate [flame graphs](http://www.brendangregg.com/flamegraphs.html). Flame
