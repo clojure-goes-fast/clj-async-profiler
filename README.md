@@ -52,6 +52,21 @@ to install JDK debug symbols. E.g., on Ubuntu that would be the package
 
 ## Usage
 
+**JDK9+:** you must start the JVM with option `-Djdk.attach.allowAttachSelf`,
+otherwise the agent will not be able to dynamically attach to the running
+process. For Leiningen, add `:jvm-opts ["-Djdk.attach.allowAttachSelf"]` to
+`project.clj`. For Boot, start the process with environment variable
+`BOOT_JVM_OPTIONS="-Djdk.attach.allowAttachSelf"`.
+
+From [async-profiler
+README](https://github.com/jvm-profiling-tools/async-profiler#restrictionslimitations):
+It is highly recommended to use `-XX:+UnlockDiagnosticVMOptions
+-XX:+DebugNonSafepoints` JVM flags. Without those flags the profiler will still
+work correctly but results might be less accurate. Without these options, there
+is a high chance that simple inlined methods will not appear in the profile.
+When agent is attached at runtime CompiledMethodLoad JVMTI event enables debug
+info, but only for methods compiled after the event is turned on.
+
 Add `com.clojure-goes-fast/clj-async-profiler` to your dependencies:
 
 [![](https://clojars.org/com.clojure-goes-fast/clj-async-profiler/latest-version.svg)](https://clojars.org/com.clojure-goes-fast/clj-async-profiler)
@@ -62,9 +77,8 @@ graphs. The most common usage scenario looks like this:
 ```clojure
 (require '[clj-async-profiler.core :as prof])
 
-;; something CPU-heavy is already running
-
-(prof/profile-for 10 {}) ; Run profiler for 10 seconds
+;; Profile the following expression:
+(prof/profile (dotimes [i 10000] (reduce + (range i))))
 
 ;; The resulting flamegraph will be stored in /tmp/clj-async-profiler/results/
 ;; You can view the SVG directly from there or start a local webserver:
@@ -78,9 +92,28 @@ You can also start and stop the profiler manually with `prof/start` and
 Each profiling command accepts a map of options. See docstrings for each command
 for the list of supported options.
 
-Each profiling command optionnally accepts a PID as a first argument. If PID is
-provided, an external JVM process will be sampled, otherwise the current process
-is targeted.
+Option map for each profiling command can have a `:pid` value. If it is
+provided, an external JVM process with this PID will be sampled, otherwise the
+current process is targeted.
+
+## Running on non-x64 platforms
+
+clj-async-profiler ships with native libraries only for x64 Linux/OSX. To use it
+on ARM or other [supported
+platform](https://github.com/jvm-profiling-tools/async-profiler#supported-platforms),
+you should to the following:
+
+1. Build
+   [async-profiler](https://github.com/jvm-profiling-tools/async-profiler#building)
+   for the desired platform.
+2. Put the resulting `libasyncProfiler.so` in a place accessible by your JVM
+   process.
+3. Execute from Clojure:
+
+   ```clj
+   (reset! clj-async-profiler.core/async-profiler-agent-path
+           "/path/to/libasyncProfiler.so")
+   ```
 
 ## License
 
