@@ -15,6 +15,7 @@
 - Make it possible to use clj-async-profiler outside of REPL environment (see
   [clojure-goes-fast/clj-memory-meter#2](https://github.com/clojure-goes-fast/clj-memory-meter/issues/2)
   for context).
+- Make the profiled event configurable through options.
 
 ### 0.1.3 (2018-04-13)
 

@@ -148,7 +148,7 @@
   (case command
     "list" (format "%s,file=%s" command (:file options))
     "start" (format "%s,event=%s,file=%s,interval=%s,collapsed"
-                    command (:event options) (:file options)
+                    command (name (:event options :cpu)) (:file options)
                     (:interval options 1000000))
     "stop" (format "%s,file=%s,collapsed" command (:file options))))
 
@@ -194,14 +194,14 @@
   "Start the profiler for the specified process ID. Available options:
 
   :pid - process to attach to (default: current process)
-  :interval - sampling interval in nanoseconds (default: 1000000 - 1ms)"
+  :interval - sampling interval in nanoseconds (default: 1000000 - 1ms)
+  :event - event to profile, see `list-event-types` (default: :cpu)"
   ([] (start {}))
 
   ([options]
    (let [pid (or (:pid options) (get-self-pid))
          f (tmp-internal-file "start" "txt")]
-     (attach-agent pid (make-command-string
-                        "start" (assoc options :file f, :event "cpu")))
+     (attach-agent pid (make-command-string "start" (assoc options :file f)))
      (slurp f)))
 
   ([pid options]
