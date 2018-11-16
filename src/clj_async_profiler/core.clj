@@ -251,7 +251,7 @@
                          [(dissoc options? :pid) body]
                          [{} (cons options? body)])]
     `(try (let [options# ~options
-                _# (start options#)
+                _# (println (start options#))
                 ret# (try ~@body
                           (finally (stop options#)))
                 f# (stop options#)]
@@ -267,11 +267,10 @@
 
   ([duration-in-seconds options]
    (println (start options))
-   (future
-     (let [deadline (+ (.getTime (Date.)) (* duration-in-seconds 1000))]
-       (while (< (.getTime (Date.)) deadline)
-         (Thread/sleep 1000))
-       (stop options))))
+   (let [deadline (+ (System/currentTimeMillis) (* duration-in-seconds 1000))]
+     (while (< (System/currentTimeMillis) deadline)
+       (Thread/sleep 1000)))
+   (stop options))
 
   ([pid duration-in-seconds options]
    (println "[pid duration options] arity is deprecated. Add :pid to options map instead.")

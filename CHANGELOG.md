@@ -16,6 +16,9 @@
   [clojure-goes-fast/clj-memory-meter#2](https://github.com/clojure-goes-fast/clj-memory-meter/issues/2)
   for context).
 - Make the profiled event configurable through options.
+- BREAKING: `profile-for` no longer returns a future, instead it blocks the
+  current thread for the specified duration. You can still wrap this call in
+  `(future ...)` manually if needed.
 
 ### 0.1.3 (2018-04-13)
 
