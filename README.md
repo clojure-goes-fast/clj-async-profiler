@@ -98,9 +98,9 @@ current process is targeted.
 
 ## Running on non-x64 platforms
 
-clj-async-profiler ships with native libraries only for x64 Linux/OSX. To use it
-on ARM or other [supported
-platform](https://github.com/jvm-profiling-tools/async-profiler#supported-platforms),
+clj-async-profiler ships with native libraries only for x64 Linux/OSX and Linux
+ARM. To use it on other [supported
+platforms](https://github.com/jvm-profiling-tools/async-profiler#supported-platforms),
 you should to the following:
 
 1. Build
