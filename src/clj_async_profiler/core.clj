@@ -39,8 +39,7 @@
 
 (defn- add-url-to-classloader-reflective
   "This is needed for cases when there is no DynamicClassLoader in the classloader
-  chain (i.e., the env is not a REPL). Note that this will throw warning on Java
-  9/10 and will probably stop working at all from Java 11."
+  chain (i.e., the env is not a REPL)."
   [^URLClassLoader loader, url]
   (doto (.getDeclaredMethod URLClassLoader "addURL" (into-array Class [java.net.URL]))
     (.setAccessible true)
@@ -162,6 +161,17 @@
         method (.getDeclaredMethod vm-class "attach" (into-array Class [String]))]
     (.invoke method nil (object-array [pid]))))
 
+(defmacro ^:private load-agent-path
+  "Call `VirtualMachine.loadAgentPath` with the given command. This macro expands
+  to either reflective or non-reflective call, depending whether VirtualMachine
+  class is available at compile time (on JDK9+)."
+  [vm agent-so command-string]
+  (if (resolve 'com.sun.tools.attach.VirtualMachine)
+    (do (println "non-reflective!")
+        `(.loadAgentPath ~(with-meta vm {:tag 'com.sun.tools.attach.VirtualMachine})
+                         ~agent-so ~command-string))
+    `(.loadAgentPath ~vm ~agent-so ~command-string)))
+
 (defn attach-agent [pid command-string]
   (let [pid (str pid)
         vm (or (@virtual-machines pid)
@@ -169,7 +179,7 @@
                  (swap! virtual-machines assoc pid new-vm)
                  new-vm))
         agent-so (async-profiler-agent)]
-    (try (.loadAgentPath vm agent-so command-string)
+    (try (load-agent-path vm agent-so command-string)
          (catch Exception ex
            ;; If agent failed to load, try to load the library with System/load
            ;; which hopefully throws a more informative exception.
