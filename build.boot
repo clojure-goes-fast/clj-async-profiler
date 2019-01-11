@@ -1,6 +1,6 @@
 (task-options!
  pom {:project     'com.clojure-goes-fast/clj-async-profiler
-      :version     "0.2.0"
+      :version     "0.2.1-SNAPSHOT"
       :description "Clojure wrapper around Java's async-profiler"
       :url         "https://github.com/clojure-goes-fast/clj-async-profiler"
       :scm         {:url "https://github.com/clojure-goes-fast/clj-async-profiler"}
