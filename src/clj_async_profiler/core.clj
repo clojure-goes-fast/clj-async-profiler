@@ -194,7 +194,7 @@
    (list-event-types (assoc options :pid pid))))
 
 (defn start
-  "Start the profiler for the specified process ID. Available options:
+  "Start the profiler. Available options:
 
   :pid - process to attach to (default: current process)
   :interval - sampling interval in nanoseconds (default: 1000000 - 1ms)
@@ -212,8 +212,8 @@
    (start (assoc options :pid pid))))
 
 (defn stop
-  "Stop the profiler for the specified process ID. and save the results into a
-  temporary file. Return the file object with the results. Available options:
+  "Stop the currently runnning profiler and and save the results into a temporary
+  file. Return the file object with the results. Available options:
 
   :pid - process to attach to (default: current process)
   :generate-flamegraph? - if true, generate flamegraph in the same directory as
@@ -243,9 +243,8 @@
 
 (defmacro profile
   "Profile the execution of `body`. If the first argument is a map, treat it as
-  options. For available options, see `clj-async-profiler.core/start` and
-  `clj-async-profiler.core/stop`. `:pid` option is ignored, current process is
-  always profiled. Additional options:
+  options. For available options, see `start` and `stop`. `:pid` option is
+  ignored, current process is always profiled. Additional options:
 
   :return-file - if true, return the generated flamegraph file, otherwise return
                  the value returned by `body` (default: false - return value)"
@@ -262,9 +261,8 @@
          @f# ret#))))
 
 (defn profile-for
-  "Run the profiler for the specified duration. Return a future that will deliver
-  the file with the results. For available options, see `clj-async-profiler.core/start` and
-  `clj-async-profiler.core/stop`."
+  "Run the profiler for the specified duration. Return the generated flamegraph
+  file. For available options, see `start` and `stop`."
   ([duration-in-seconds]
    (profile-for duration-in-seconds {}))
 
