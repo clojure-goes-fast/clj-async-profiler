@@ -253,13 +253,13 @@
   (let [[options body] (if (map? options?)
                          [(dissoc options? :pid) body]
                          [{} (cons options? body)])]
-    `(try (let [options# ~options
-                _# (println (start options#))
-                ret# (try ~@body
-                          (finally (stop options#)))
-                f# (stop options#)]
-            (if (:return-file options#)
-              f# ret#)))))
+    `(let [options# ~options
+           _# (println (start options#))
+           f# (atom nil)
+           ret# (try ~@body
+                     (finally (reset! f# (stop options#))))]
+       (if (:return-file options#)
+         @f# ret#))))
 
 (defn profile-for
   "Run the profiler for the specified duration. Return a future that will deliver
