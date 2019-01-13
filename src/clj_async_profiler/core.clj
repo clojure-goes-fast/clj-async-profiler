@@ -149,12 +149,13 @@
 (defn- make-command-string [command options]
   (case command
     "list" (format "%s,file=%s" command (:file options))
+    "status" (format "%s,file=%s" command (:file options))
     "start" (format "%s,event=%s,file=%s,interval=%s,collapsed"
                     command (name (:event options :cpu)) (:file options)
                     (:interval options 1000000))
     "stop" (format "%s,file=%s,collapsed" command (:file options))))
 
-(def ^:private virtual-machines (atom {}))
+(defonce ^:private virtual-machines (atom {}))
 
 (defn- mk-vm [pid]
   (let [vm-class (get-virtualmachine-class)
@@ -203,6 +204,17 @@
    (println "[pid options] arity is deprecated. Add :pid to options map instead.")
    (list-event-types (assoc options :pid pid))))
 
+(defn status
+  "Get profiling agent status. Available options:
+
+  :pid - process to attach to (default: current process)"
+  ([] (status {}))
+  ([options]
+   (let [pid (or (:pid options) (get-self-pid))
+         f (tmp-internal-file "status" "txt")]
+     (attach-agent pid (make-command-string "status" {:file f}))
+     (slurp f))))
+
 (defn start
   "Start the profiler. Available options:
 
@@ -242,6 +254,9 @@
 
   ([options]
    (let [pid (or (:pid options) (get-self-pid))
+         status-msg (status options)
+         _ (when-not (.contains status-msg "is running")
+             (throw (ex-info status-msg {})))
          f (tmp-results-file "profile" "txt")]
      (attach-agent pid (make-command-string "stop" {:file f}))
      (if (:generate-flamegraph? options true)
