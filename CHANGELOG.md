@@ -1,5 +1,18 @@
 # Changelog
 
+### 0.2.1-SNAPSHOT
+
+- Update vendored async-profiler libraries to
+  [1.5](https://github.com/jvm-profiling-tools/async-profiler/blob/master/CHANGELOG.md#15---2019-01-08).
+  Big features of the new async-profiler:
+  + Native stack traces on macOS.
+  + Wall-clock profiler: pass `:event :wall` to the profiling command.
+- Ship prebuilt library for Linux ARM platform.
+- Fix `profile` generating flamegraph twice.
+- Avoid illegal access warning on JDK9+.
+- [#1](https://github.com/clojure-goes-fast/clj-async-profiler/issues/1): Don't
+  create flamegraph file if profiler was not running.
+
 ### 0.2.0 (2018-11-21)
 
 - Update vendored async-profiler libraries to
