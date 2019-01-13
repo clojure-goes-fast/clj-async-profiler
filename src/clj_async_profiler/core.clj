@@ -213,9 +213,12 @@
 
   ([options]
    (let [pid (or (:pid options) (get-self-pid))
-         f (tmp-internal-file "start" "txt")]
-     (attach-agent pid (make-command-string "start" (assoc options :file f)))
-     (slurp f)))
+         f (tmp-internal-file "start" "txt")
+         _ (attach-agent pid (make-command-string "start" (assoc options :file f)))
+         msg (slurp f)]
+     (if (.startsWith ^String msg "Started")
+       msg
+       (throw (ex-info msg {})))))
 
   ([pid options]
    (println "[pid options] arity is deprecated. Add :pid to options map instead.")
