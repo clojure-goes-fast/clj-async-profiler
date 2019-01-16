@@ -1,0 +1,49 @@
+version: 2
+jobs:
+  test-jdk8:
+    working_directory: ~/project
+    docker:
+      - image: clojure:openjdk-8-boot-2.8.2-alpine
+    steps:
+      - checkout
+      - restore_cache:
+          key: project-{{ checksum "build.boot" }}
+      - run: BOOT_CLOJURE_VERSION=1.8.0 boot test
+      - run: BOOT_CLOJURE_VERSION=1.9.0 boot test
+      - run: BOOT_CLOJURE_VERSION=1.10.0 boot test
+      - save_cache:
+          paths:
+            - ~/.m2
+            - ~/.boot/cache/lib
+            - ~/.boot/cache/bin
+          key: project-{{ checksum "build.boot" }}
+    environment:
+      BOOT_JVM_OPTIONS: "-Xms512m -Xmx1024m"
+      BOOT_WATCHERS_DISABLE: "yes"
+
+  test-jdk11:
+    working_directory: ~/project
+    docker:
+      - image: clojure:openjdk-11-boot-2.8.2
+    steps:
+      - checkout
+      - restore_cache:
+          key: project-{{ checksum "build.boot" }}
+      - run: BOOT_CLOJURE_VERSION=1.8.0 boot test
+      - run: BOOT_CLOJURE_VERSION=1.9.0 boot test
+      - run: BOOT_CLOJURE_VERSION=1.10.0 boot test
+      - save_cache:
+          paths:
+            - ~/.m2
+            - ~/.boot/cache/lib
+            - ~/.boot/cache/bin
+          key: project-{{ checksum "build.boot" }}
+    environment:
+      BOOT_JVM_OPTIONS: "-Xms512m -Xmx1024m -Djdk.attach.allowAttachSelf"
+      BOOT_WATCHERS_DISABLE: "yes"
+workflows:
+  version: 2
+  test_all_jdks:
+    jobs:
+      - test-jdk8
+      - test-jdk11

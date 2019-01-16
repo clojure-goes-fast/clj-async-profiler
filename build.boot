@@ -10,9 +10,17 @@
 
 (set-env! :resource-paths #{"vendor" "src"}
           :source-paths   #{"src"}
-          :dependencies   '[[org.clojure/clojure "1.9.0" :scope "provided"]])
+          :dependencies   '[[org.clojure/clojure "1.10.0" :scope "provided"]])
 
 (deftask build
   "Build the project."
   []
   (comp (pom) (jar)))
+
+(ns-unmap 'boot.user 'test)
+(deftask test
+  "Check if agent can attach at all."
+  []
+  (with-pass-thru _
+    (require '[clj-async-profiler.core :as prof])
+    ((resolve 'prof/list-event-types))))
