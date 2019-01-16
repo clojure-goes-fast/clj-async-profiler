@@ -150,9 +150,9 @@
   (case command
     "list" (format "%s,file=%s" command (:file options))
     "status" (format "%s,file=%s" command (:file options))
-    "start" (format "%s,event=%s,file=%s,interval=%s,collapsed"
+    "start" (format "%s,event=%s,file=%s,interval=%s,%scollapsed"
                     command (name (:event options :cpu)) (:file options)
-                    (:interval options 1000000))
+                    (:interval options 1000000) (if (:threads options) "threads," ""))
     "stop" (format "%s,file=%s,collapsed" command (:file options))))
 
 (defonce ^:private virtual-machines (atom {}))
@@ -215,6 +215,7 @@
 
   :pid - process to attach to (default: current process)
   :interval - sampling interval in nanoseconds (default: 1000000 - 1ms)
+  :threads - profile each thread separately
   :event - event to profile, see `list-event-types` (default: :cpu)"
   ([] (start {}))
   ([options]
