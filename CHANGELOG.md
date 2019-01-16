@@ -1,6 +1,6 @@
 # Changelog
 
-### 0.2.1 (2019-01-16)
+### 0.2.2 (2019-01-16)
 
 - Update vendored async-profiler libraries to
   [1.5](https://github.com/jvm-profiling-tools/async-profiler/blob/master/CHANGELOG.md#15---2019-01-08).
@@ -12,6 +12,8 @@
 - Avoid illegal access warning on JDK9+.
 - [#1](https://github.com/clojure-goes-fast/clj-async-profiler/issues/1): Don't
   create flamegraph file if profiler was not running.
+
+### ~0.2.1 - botched release~
 
 ### 0.2.0 (2018-11-21)
 
