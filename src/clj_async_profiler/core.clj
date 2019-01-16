@@ -80,11 +80,11 @@
 
 (defn- get-virtualmachine-class []
   ;; In JDK9+, the class is already present, no extra steps required.
-  (try (resolve 'com.sun.tools.attach.VirtualMachine)
-       ;; In earlier JDKs, load tools.jar and get the class from there.
-       (catch ClassNotFoundException _
-         (Class/forName "com.sun.tools.attach.VirtualMachine"
-                        false @tools-jar-classloader))))
+  (or (try (resolve 'com.sun.tools.attach.VirtualMachine)
+           (catch ClassNotFoundException _))
+      ;; In earlier JDKs, load tools.jar and get the class from there.
+      (Class/forName "com.sun.tools.attach.VirtualMachine"
+                     false @tools-jar-classloader)))
 
 ;;; Agent unpacking
 
@@ -167,11 +167,11 @@
   to either reflective or non-reflective call, depending whether VirtualMachine
   class is available at compile time (on JDK9+)."
   [vm agent-so command-string]
-  (if (resolve 'com.sun.tools.attach.VirtualMachine)
-    (do (println "non-reflective!")
-        `(.loadAgentPath ~(with-meta vm {:tag 'com.sun.tools.attach.VirtualMachine})
-                         ~agent-so ~command-string))
-    `(.loadAgentPath ~vm ~agent-so ~command-string)))
+  (let [vm-sym (if (try (resolve 'com.sun.tools.attach.VirtualMachine)
+                        (catch ClassNotFoundException _))
+                 (with-meta vm {:tag 'com.sun.tools.attach.VirtualMachine})
+                 vm)]
+    `(.loadAgentPath ~vm-sym ~agent-so ~command-string)))
 
 (defn attach-agent [pid command-string]
   (let [pid (str pid)
