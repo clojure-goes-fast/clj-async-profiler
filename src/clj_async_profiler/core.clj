@@ -125,7 +125,7 @@
   "Run Flamegraph script on the provided stacks file, rendering the SVG result."
   [in-stacks-file out-svg-file {:keys [min-width reverse? icicle?]
                                 :or {icicle? reverse?}}]
-  (let [args (flatten ["perl" (flamegraph-script) "--colors=java"
+  (let [args (flatten ["perl" (flamegraph-script) "--colors=clojure"
                        (if min-width [(str "--minwidth=" min-width)] [])
                        (if reverse? ["--reverse"] [])
                        (if icicle? ["--inverted"] [])

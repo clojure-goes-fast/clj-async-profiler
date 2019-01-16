@@ -388,6 +388,28 @@ sub color {
 		}
 		# fall-through to color palettes
 	}
+	if (defined $type and $type eq "clojure") {
+		# Handle both annotations (_[j], _[i], ...; which are
+		# accurate), as well as input that lacks any annotations, as
+		# best as possible. Without annotations, we get a little hacky
+		# and match on java|org|com, etc.
+		if ($name =~ m:_\[j\]$:) {	# jit annotation
+			$type = "green";
+		} elsif ($name =~ m:_\[i\]$:) {	# inline annotation
+			$type = "aqua";
+		} elsif ($name =~ m:/:) { # Clojure (will only work after unmunging)
+			$type = "clojure-blue";
+		} elsif ($name =~ m:\.:) { # Java (if it has a dot and is not Clojure)
+			$type = "clojure-green";
+		} elsif ($name =~ /::/) {	# C++
+			$type = "yellow";
+		} elsif ($name =~ m:_\[k\]$:) {	# kernel annotation
+			$type = "orange";
+		} else {			# system
+			$type = "red";
+		}
+		# fall-through to color palettes
+	}
 	if (defined $type and $type eq "perl") {
 		if ($name =~ /::/) {		# C++
 			$type = "yellow";
@@ -476,6 +498,18 @@ sub color {
 		my $g = 90 + int(65 * $v1);
 		return "rgb($r,$g,0)";
 	}
+	if (defined $type and $type eq "clojure-blue") {
+		my $r = 143;
+		my $g = 181;
+		my $b = 254;
+		return "rgb($r,$g,$b)";
+        }
+	if (defined $type and $type eq "clojure-green") {
+		my $r = 145;
+		my $g = 220;
+		my $b = 81;
+		return "rgb($r,$g,$b)";
+        }
 
 	return "rgb(0,0,0)";
 }
