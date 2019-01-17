@@ -1,9 +1,9 @@
 (ns clj-async-profiler.core
-  (:require [clj-async-profiler.server :as server]
+  (:require [clj-async-profiler.post-processing :refer [post-process-stacks]]
+            [clj-async-profiler.server :as server]
             [clojure.java.io :as io]
             [clojure.java.shell :as sh])
-  (:import clojure.lang.DynamicClassLoader
-           java.lang.management.ManagementFactory
+  (:import java.lang.management.ManagementFactory
            java.net.URLClassLoader
            java.text.SimpleDateFormat
            java.util.Date))
@@ -227,6 +227,19 @@
        msg
        (throw (ex-info msg {}))))))
 
+(defn generate-flamegraph
+  "Generate a flamegraph SVG file from a collapsed stacks file, produced by
+  async-profiler. For available options, see `stop`."
+  [stacks-file options]
+  (let [flamegraph-file (tmp-results-file "flamegraph" "svg")
+        f (if-let [transform (get options :transform identity)]
+            (let [tfile (tmp-internal-file "transformed-profile" "txt")]
+              (post-process-stacks stacks-file tfile transform)
+              tfile)
+            stacks-file)]
+    (run-flamegraph-script f flamegraph-file options)
+    flamegraph-file))
+
 (defn stop
   "Stop the currently runnning profiler and and save the results into a temporary
   file. Return the file object with the results. Available options:
@@ -250,9 +263,7 @@
          f (tmp-results-file "profile" "txt")]
      (attach-agent pid (make-command-string "stop" {:file f}))
      (if (:generate-flamegraph? options true)
-       (let [flamegraph-file (tmp-results-file "flamegraph" "svg")]
-         (run-flamegraph-script f flamegraph-file options)
-         flamegraph-file)
+       (generate-flamegraph f options)
        f))))
 
 (defmacro profile
