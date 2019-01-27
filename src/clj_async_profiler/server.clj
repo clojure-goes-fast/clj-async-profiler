@@ -6,14 +6,14 @@
 (ns clj-async-profiler.server
   (:require [clojure.java.io :as io]
             [clojure.string :as str])
-  (:import [com.sun.net.httpserver HttpHandler HttpServer]
-           [java.io File FileNotFoundException]
-           [java.net HttpURLConnection InetSocketAddress URLDecoder]))
+  (:import (com.sun.net.httpserver HttpHandler HttpServer HttpExchange)
+           (java.io File FileNotFoundException)
+           (java.net HttpURLConnection InetSocketAddress URLDecoder)))
 
 (defn- respond
   ([exchange body]
    (respond exchange body HttpURLConnection/HTTP_OK))
-  ([exchange body code]
+  ([^HttpExchange exchange, ^String body, code]
    (.sendResponseHeaders exchange code 0)
    (doto (.getResponseBody exchange)
      (.write (.getBytes body))
@@ -29,10 +29,10 @@
                               (str root (if (= "/" root) "" File/separator) f)
                               f)))))
 
-(defn- get-extension [filename]
+(defn- get-extension [^String filename]
   (.substring filename (+ 1 (.lastIndexOf filename "."))))
 
-(defn- serve [exchange file]
+(defn- serve [^HttpExchange exchange, ^File file]
   (let [ext (get-extension (.getName file))
         body-served (not= (.getRequestMethod exchange) "HEAD")
         length (.length file)]
@@ -52,7 +52,7 @@
 
 (defn- fs-handler [base]
   (proxy [HttpHandler] []
-    (handle [exchange]
+    (handle [^HttpExchange exchange]
       (let [uri (URLDecoder/decode (remove-url-params (str (.getRequestURI exchange))))
             f (io/file (str base uri))
             filenames (sort (.list f))]
@@ -71,7 +71,7 @@
 (defn start-server
   "Starts a simple webserver with the local directory `dir` as its root."
   [port dir]
-  (when @current-server (.stop @current-server 0))
+  (when @current-server (.stop ^HttpServer @current-server 0))
   (println "Starting server on port" port)
   (reset! current-server
           (doto (HttpServer/create (InetSocketAddress. port) 0)

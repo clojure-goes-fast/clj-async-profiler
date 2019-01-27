@@ -78,7 +78,7 @@
        (add-url-to-classloader-reflective loader tools-jar))
      loader)))
 
-(defn- get-virtualmachine-class []
+(defn- ^Class get-virtualmachine-class []
   ;; In JDK9+, the class is already present, no extra steps required.
   (or (try (resolve 'com.sun.tools.attach.VirtualMachine)
            (catch ClassNotFoundException _))
@@ -254,7 +254,7 @@
 
   ([options]
    (let [pid (or (:pid options) (get-self-pid))
-         status-msg (status options)
+         ^String status-msg (status options)
          _ (when-not (.contains status-msg "is running")
              (throw (ex-info status-msg {})))
          f (tmp-results-file "profile" "txt")]
