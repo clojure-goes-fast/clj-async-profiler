@@ -1,8 +1,7 @@
-# clj-async-profiler
+# clj-async-profiler [![](https://circleci.com/gh/clojure-goes-fast/clj-async-profiler/tree/master.png)](https://circleci.com/gh/clojure-goes-fast/clj-async-profiler)
 
-_You can read the motivation behind clj-async-profiler and the usage example in
-the
-[blog post](http://clojure-goes-fast.com/blog/profiling-tool-async-profiler/)._
+- _Introduction: http://clojure-goes-fast.com/blog/profiling-tool-async-profiler/_
+- _Tips, tricks, new features in 0.3.0: http://clojure-goes-fast.com/blog/clj-async-profiler-tips/_
 
 This library is a thin Clojure wrapper around the
 excellent
