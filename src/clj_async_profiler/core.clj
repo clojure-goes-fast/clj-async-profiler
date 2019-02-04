@@ -193,16 +193,11 @@
 
   :pid - process to attach to (default: current process)"
   ([] (list-event-types {}))
-
   ([options]
    (let [pid (or (:pid options) (get-self-pid))
          f (tmp-internal-file "list" "txt")]
      (attach-agent pid (make-command-string "list" {:file f}))
-     (println (slurp f))))
-
-  ([pid options]
-   (println "[pid options] arity is deprecated. Add :pid to options map instead.")
-   (list-event-types (assoc options :pid pid))))
+     (println (slurp f)))))
 
 (defn status
   "Get profiling agent status. Available options:
@@ -222,7 +217,6 @@
   :interval - sampling interval in nanoseconds (default: 1000000 - 1ms)
   :event - event to profile, see `list-event-types` (default: :cpu)"
   ([] (start {}))
-
   ([options]
    (let [pid (or (:pid options) (get-self-pid))
          f (tmp-internal-file "start" "txt")
@@ -230,11 +224,7 @@
          msg (slurp f)]
      (if (.startsWith ^String msg "Started")
        msg
-       (throw (ex-info msg {})))))
-
-  ([pid options]
-   (println "[pid options] arity is deprecated. Add :pid to options map instead.")
-   (start (assoc options :pid pid))))
+       (throw (ex-info msg {}))))))
 
 (defn stop
   "Stop the currently runnning profiler and and save the results into a temporary
@@ -251,7 +241,6 @@
   :icicle? - if true, invert the flamegraph upside down (default: false for
              regular flamegraph, true for reverse)"
   ([] (stop {}))
-
   ([options]
    (let [pid (or (:pid options) (get-self-pid))
          ^String status-msg (status options)
@@ -263,11 +252,7 @@
        (let [flamegraph-file (tmp-results-file "flamegraph" "svg")]
          (run-flamegraph-script f flamegraph-file options)
          flamegraph-file)
-       f)))
-
-  ([pid options]
-   (println "[pid options] arity is deprecated. Add :pid to options map instead.")
-   (stop (assoc options :pid pid))))
+       f))))
 
 (defmacro profile
   "Profile the execution of `body`. If the first argument is a map, treat it as
@@ -299,11 +284,7 @@
    (let [deadline (+ (System/currentTimeMillis) (* duration-in-seconds 1000))]
      (while (< (System/currentTimeMillis) deadline)
        (Thread/sleep 1000)))
-   (stop options))
-
-  ([pid duration-in-seconds options]
-   (println "[pid duration options] arity is deprecated. Add :pid to options map instead.")
-   (profile-for duration-in-seconds (assoc options :pid pid))))
+   (stop options)))
 
 (defn serve-files
   "Start a simple webserver of the results directory on the provided port."
