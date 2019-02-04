@@ -1,5 +1,15 @@
 # Changelog
 
+### 0.3.0 (2019-02-04)
+
+- Add custom color scheme for generated flamegraphs.
+- Automatically demunge Java and Clojure frames in the output.
+- Add `:transform <fn>` capability to specify a custom transform function to
+  post-process the collected stacks.
+- Add `:threads true` option to generate stacks for each thread separately.
+- BREAKING: remove arities that take an explicit PID argument. If you want to
+  profile another process, pass `:pid <PID>` argument to any profiling function.
+
 ### 0.2.2 (2019-01-16)
 
 - Update vendored async-profiler libraries to
