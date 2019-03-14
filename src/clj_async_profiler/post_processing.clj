@@ -45,7 +45,7 @@
                                       ;; no special characters munged in the
                                       ;; frame, take a faster path.
                                       next-char-idx (inc uscore)]
-                                  (if (and (<= next-char-idx (.length ^String new-frame))
+                                  (if (and (< next-char-idx (.length ^String new-frame))
                                            (Character/isUpperCase (.charAt frame next-char-idx)))
                                     (Compiler/demunge new-frame)
                                     (-> ^String new-frame
