@@ -1,5 +1,10 @@
 # Changelog
 
+### 0.3.1 (2019-03-15)
+
+- [#9](https://github.com/clojure-goes-fast/clj-async-profiler/issues/9): Fix
+  out-of-bounds string access when demunging stackframes.
+
 ### 0.3.0 (2019-02-04)
 
 - Add custom color scheme for generated flamegraphs.
