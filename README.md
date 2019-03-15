@@ -122,7 +122,7 @@ repository
 is
 [https://github.com/jvm-profiling-tools/async-profiler](https://github.com/jvm-profiling-tools/async-profiler).
 
-Copyright 2017 Andrei Pangin
+Copyright 2017-2019 Andrei Pangin
 
 ---
 
@@ -148,4 +148,4 @@ Copyright 2013 Fogus and contributors.
 clj-async-profiler is distributed under the Eclipse Public License.
 See [ECLIPSE_PUBLIC_LICENSE](license/ECLIPSE_PUBLIC_LICENSE).
 
-Copyright 2017 Alexander Yakushev
+Copyright 2017-2019 Alexander Yakushev
