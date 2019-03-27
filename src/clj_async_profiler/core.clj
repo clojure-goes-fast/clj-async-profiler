@@ -123,10 +123,12 @@
 
 (defn run-flamegraph-script
   "Run Flamegraph script on the provided stacks file, rendering the SVG result."
-  [in-stacks-file out-svg-file {:keys [min-width reverse? icicle?]
+  [in-stacks-file out-svg-file {:keys [min-width reverse? icicle? width height]
                                 :or {icicle? reverse?}}]
   (let [args (flatten ["perl" (flamegraph-script) "--colors=clojure"
                        (if min-width [(str "--minwidth=" min-width)] [])
+                       (if width [(str "--width=" width)] [])
+                       (if height [(str "--height=" height)] [])
                        (if reverse? ["--reverse"] [])
                        (if icicle? ["--inverted"] [])
                        (str in-stacks-file)])
@@ -250,6 +252,8 @@
   :min-width - minimum width in pixels for a frame to be shown on a flamegraph.
                Use this if the resulting flamegraph is too big and hangs your
                browser (default: nil, recommended: 1-5)
+  :width     - width of the generated flamegraph (default: 1200px, recommended to change for big screens)
+  :height    - height of the generated flamegraph
   :reverse? - if true, generate the reverse flamegraph which grows from callees
               up to callers (default: false)
   :icicle? - if true, invert the flamegraph upside down (default: false for
