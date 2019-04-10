@@ -1,5 +1,10 @@
 # Changelog
 
+### 0.3.2-SNAPSHOT (unreleased)
+
+- [#10](https://github.com/clojure-goes-fast/clj-async-profiler/issues/10): Adds
+  support for SVG's `width` and `height` options.
+
 ### 0.3.1 (2019-03-15)
 
 - [#9](https://github.com/clojure-goes-fast/clj-async-profiler/issues/9): Fix
