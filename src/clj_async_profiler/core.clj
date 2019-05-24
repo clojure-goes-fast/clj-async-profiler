@@ -138,8 +138,7 @@
       (let [f (io/file out-svg-file)]
         (io/copy (:out p) f)
         f)
-      (do (io/copy (:err p) *err*)
-          (binding [*err* *out*] (flush))))))
+      (throw (ex-info (:err p) {:cmd args})))))
 
 ;;; Profiling
 
