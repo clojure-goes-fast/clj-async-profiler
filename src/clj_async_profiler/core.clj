@@ -2,7 +2,8 @@
   (:require [clj-async-profiler.post-processing :refer [post-process-stacks]]
             [clj-async-profiler.server :as server]
             [clojure.java.io :as io]
-            [clojure.java.shell :as sh])
+            [clojure.java.shell :as sh]
+            [clojure.string :as str])
   (:import java.lang.management.ManagementFactory
            java.net.URLClassLoader
            java.text.SimpleDateFormat
@@ -142,6 +143,21 @@
 
 ;;; Profiling
 
+;; Used to assign sequential IDs to profiler runs, so that just the ID instead
+;; of the full filename can be passed to regenerate flamegraphs or diffs.
+(defonce ^:private next-run-id (atom 0))
+(defonce ^:private run-id->stacks-file (atom {}))
+
+(defn find-profile [run-id-or-stacks-file]
+  (if (number? run-id-or-stacks-file)
+    (@run-id->stacks-file run-id-or-stacks-file)
+    ;; When the file was passed directly, infer information from its name.
+    (let [^java.io.File f (io/file run-id-or-stacks-file)
+          [_ id event] (re-matches #"(\d+)-([^-]+)-.+" (.getName f))]
+      (when-not (.exists f)
+        (throw (ex-info (str "File " f " does not exist.") {})))
+      {:id (if id (Integer/parseInt id) -1), :stacks-file f, :event (keyword (or event :cpu))})))
+
 (defn get-self-pid
   "Returns the process ID of the current JVM process."
   []
@@ -230,10 +246,11 @@
        (throw (ex-info msg {}))))))
 
 (defn generate-flamegraph
-  "Generate a flamegraph SVG file from a collapsed stacks file, produced by
-  async-profiler. For available options, see `stop`."
-  [stacks-file options]
-  (let [flamegraph-file (tmp-results-file "flamegraph" "svg")
+  "Generate a flamegraph SVG file from a collapsed stacks file, identified either
+  by its filename, or numerical ID. For available options, see `stop`."
+  [run-id-or-stacks-file options]
+  (let [{:keys [id stacks-file event]} (find-profile run-id-or-stacks-file)
+        flamegraph-file (tmp-results-file (format "%02d-%s-flamegraph" id (name event)) "svg")
         f (if-let [transform (get options :transform identity)]
             (let [tfile (tmp-internal-file "transformed-profile" "txt")]
               (post-process-stacks stacks-file tfile transform)
@@ -264,10 +281,16 @@
          ^String status-msg (status options)
          _ (when-not (.contains status-msg "is running")
              (throw (ex-info status-msg {})))
-         f (tmp-results-file "profile" "txt")]
+         run-id (swap! next-run-id inc)
+         ;; Theoretically, we can extract the profiler event from status, but
+         ;; for now it always returns "wall", so we have to rely on options.
+         event (:event options :cpu)
+         ;; Capitalize event so that it's always above "flamegraph" in the list.
+         f (tmp-results-file (format "%02d-%s" run-id (name event)) "txt")]
      (attach-agent pid (make-command-string "stop" {:file f}))
+     (swap! run-id->stacks-file assoc run-id {:id run-id, :stacks-file f, :event event})
      (if (:generate-flamegraph? options true)
-       (generate-flamegraph f options)
+       (generate-flamegraph run-id options)
        f))))
 
 (defmacro profile
