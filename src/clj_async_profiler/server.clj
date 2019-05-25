@@ -20,10 +20,12 @@
      (.close))))
 
 (defn- html
-  [root things]
-  (format "<html><head></head><body><h2>Directory listing for %s</h2><hr>
+  [root things show-stacks]
+  (format "<html><head></head><body><span><h2>Directory listing for %s</h2><a href=\"/%s\">%s</a></span><hr>
 <ul>%s</ul><hr></body></html>"
           root
+          (if show-stacks "" "?show-stacks")
+          (if show-stacks "Hide stacks" "Show stacks")
           (str/join (for [f things]
                       (format "<li><a href='%s'>%s</a></li>"
                               (str root (if (= "/" root) "" File/separator) f)
@@ -47,18 +49,22 @@
                   to (io/output-stream (.getResponseBody exchange))]
         (io/copy from to)))))
 
-(defn- remove-url-params [uri]
-  (str/replace uri #"\?\S*$" ""))
+(defn- split-url-params [uri]
+  (rest (re-matches  #"([^?]+)(\?\S*)?" uri)))
 
 (defn- fs-handler [base]
   (proxy [HttpHandler] []
     (handle [^HttpExchange exchange]
-      (let [uri (URLDecoder/decode (remove-url-params (str (.getRequestURI exchange))))
+      (let [[uri params] (split-url-params (str (.getRequestURI exchange)))
+            uri (URLDecoder/decode uri)
+            show-stacks (re-find #"show-stacks" (str params))
             f (io/file (str base uri))
-            filenames (sort (.list f))]
+            filenames (sort (filter (if show-stacks identity
+                                        #(.endsWith % "svg"))
+                                    (.list f)))]
         (if (.isDirectory f)
           (do (.add (.getResponseHeaders exchange) "Content-Type" "text/html")
-              (respond exchange (html uri filenames)))
+              (respond exchange (html uri filenames show-stacks)))
           (try
             (serve exchange f)
             (catch FileNotFoundException e
