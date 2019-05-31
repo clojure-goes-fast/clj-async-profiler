@@ -75,7 +75,7 @@
 (defn post-process-stacks
   "Perform post-processing of the profiling result with the given `transform`
   function and the default processors (demunging). Write the result to
-  `out-file`."
+  `out-file`. Return the total number of samples in the file."
   [stacks-file out-file transform]
   (let [acc (HashMap.)]
     (with-open [f (io/reader stacks-file)]
@@ -94,4 +94,5 @@
       (binding [*out* out]
         (run! (fn [[stack count]]
                 (println stack count))
-              acc)))))
+              acc))
+      (reduce + (vals acc)))))

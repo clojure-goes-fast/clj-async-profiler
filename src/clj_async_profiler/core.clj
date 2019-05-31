@@ -1,6 +1,5 @@
 (ns clj-async-profiler.core
   (:require [clj-async-profiler.post-processing :refer [post-process-stacks]]
-            [clj-async-profiler.server :as server]
             [clojure.java.io :as io]
             [clojure.java.shell :as sh]
             [clojure.string :as str])
@@ -20,9 +19,11 @@
 (defonce ^:private ^SimpleDateFormat date-format
   (SimpleDateFormat. "yyyy-MM-dd-HH-mm-ss"))
 
-(defn- tmp-internal-file [prefix extension]
-  (io/file temp-directory "internal"
-           (format "%s-%s.%s" prefix (.format date-format (Date.)) extension)))
+(let [cnt (atom 0)]
+  (defn- tmp-internal-file [prefix extension]
+    (io/file temp-directory "internal"
+             (format "%s-%s_%s.%s" prefix (.format date-format (Date.))
+                     (swap! cnt inc) extension))))
 
 (defn- tmp-results-file [prefix extension]
   (io/file temp-directory "results"
@@ -146,6 +147,8 @@
 ;; of the full filename can be passed to regenerate flamegraphs or diffs.
 (defonce ^:private next-run-id (atom 0))
 (defonce ^:private run-id->stacks-file (atom {}))
+(defonce ^:private flamegraph-file->metadata (atom {}))
+(defonce ^:private start-options (atom nil))
 
 (defn find-profile [run-id-or-stacks-file]
   (if (number? run-id-or-stacks-file)
@@ -208,13 +211,19 @@
 (defn list-event-types
   "Print all event types that can be sampled by the profiler. Available options:
 
-  :pid - process to attach to (default: current process)"
+  :pid - process to attach to (default: current process)
+  :silent? - if true, only return the event types, don't print them."
   ([] (list-event-types {}))
   ([options]
    (let [pid (or (:pid options) (get-self-pid))
-         f (tmp-internal-file "list" "txt")]
-     (attach-agent pid (make-command-string "list" {:file f}))
-     (println (slurp f)))))
+         f (tmp-internal-file "list" "txt")
+         _ (attach-agent pid (make-command-string "list" {:file f}))
+         output (slurp f)
+         event-types (->> (str/split-lines output)
+                          (keep #(keyword (second (re-matches #"\s+(.+)" %)))))]
+     (when-not (:silent? options)
+       (println output))
+     event-types)))
 
 (defn status
   "Get profiling agent status. Available options:
@@ -241,7 +250,8 @@
          _ (attach-agent pid (make-command-string "start" (assoc options :file f)))
          msg (slurp f)]
      (if (.startsWith ^String msg "Started")
-       msg
+       (do (reset! start-options options)
+           msg)
        (throw (ex-info msg {}))))))
 
 (defn generate-flamegraph
@@ -250,12 +260,12 @@
   [run-id-or-stacks-file options]
   (let [{:keys [id stacks-file event]} (find-profile run-id-or-stacks-file)
         flamegraph-file (tmp-results-file (format "%02d-%s-flamegraph" id (name event)) "svg")
-        f (if-let [transform (get options :transform identity)]
-            (let [tfile (tmp-internal-file "transformed-profile" "txt")]
-              (post-process-stacks stacks-file tfile transform)
-              tfile)
-            stacks-file)]
+        [f samples] (if-let [transform (get options :transform identity)]
+                      (let [tfile (tmp-internal-file "transformed-profile" "txt")]
+                        [tfile (post-process-stacks stacks-file tfile transform)])
+                      [stacks-file nil])]
     (run-flamegraph-script f flamegraph-file options)
+    (swap! flamegraph-file->metadata assoc flamegraph-file {:samples samples})
     flamegraph-file))
 
 (defn stop
@@ -283,7 +293,7 @@
          run-id (swap! next-run-id inc)
          ;; Theoretically, we can extract the profiler event from status, but
          ;; for now it always returns "wall", so we have to rely on options.
-         event (:event options :cpu)
+         event (:event @start-options :cpu)
          ;; Capitalize event so that it's always above "flamegraph" in the list.
          f (tmp-results-file (format "%02d-%s" run-id (name event)) "txt")]
      (attach-agent pid (make-command-string "stop" {:file f}))
@@ -327,6 +337,16 @@
 (defn serve-files
   "Start a simple webserver of the results directory on the provided port."
   [port]
-  (server/start-server port (io/file temp-directory "results")))
+  (require 'clj-async-profiler.ui)
+  ((resolve 'clj-async-profiler.ui/start-server) port (io/file temp-directory "results")))
 
 #_(serve-files 8080)
+
+(defn clear-results
+  "Clear all results from /tmp/clj-async-profiler directory."
+  []
+  (doseq [f (.listFiles (io/file temp-directory "results"))]
+    (.delete ^java.io.File f))
+  (reset! next-run-id 0)
+  (reset! run-id->stacks-file {})
+  (reset! flamegraph-file->metadata {}))
