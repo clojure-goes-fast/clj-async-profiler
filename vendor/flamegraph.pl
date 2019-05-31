@@ -515,13 +515,14 @@ sub color {
 }
 
 sub color_scale {
-	my ($value, $max) = @_;
+	my ($value) = @_;
 	my ($r, $g, $b) = (255, 255, 255);
 	$value = -$value if $negate;
 	if ($value > 0) {
-		$g = $b = int(210 * ($max - $value) / $max);
+                $value = $value > 1 ? 1 : $value;
+                $g = $b = int(210 * (1.0 - $value));
 	} elsif ($value < 0) {
-		$r = $g = int(210 * ($max + $value) / $max);
+		$r = $g = int(210 * (1.0 + $value));
 	}
 	return "rgb($r,$g,$b)";
 }
@@ -561,7 +562,7 @@ my %Tmp;
 
 # flow() merges two stacks, storing the merged frames and value data in %Node.
 sub flow {
-	my ($last, $this, $v, $d) = @_;
+	my ($last, $this, $v, $d, $sbefore) = @_;
 
 	my $len_a = @$last - 1;
 	my $len_b = @$this - 1;
@@ -579,8 +580,11 @@ sub flow {
 		# a unique ID is constructed from "func;depth;etime";
 		# func-depth isn't unique, it may be repeated later.
 		$Node{"$k;$v"}->{stime} = delete $Tmp{$k}->{stime};
-		if (defined $Tmp{$k}->{delta}) {
-			$Node{"$k;$v"}->{delta} = delete $Tmp{$k}->{delta};
+		if (defined $Tmp{$k}->{sdelta}) {
+			$Node{"$k;$v"}->{sdelta} = delete $Tmp{$k}->{sdelta};
+                        $Node{"$k;$v"}->{edelta} = $d;
+                        $Node{"$k;$v"}->{ssamples} = delete $Tmp{$k}->{ssamples};
+                        $Node{"$k;$v"}->{esamples} = $sbefore;
 		}
 		delete $Tmp{$k};
 	}
@@ -589,7 +593,8 @@ sub flow {
 		my $k = "$this->[$i];$i";
 		$Tmp{$k}->{stime} = $v;
 		if (defined $d) {
-			$Tmp{$k}->{delta} += $i == $len_b ? $d : 0;
+			$Tmp{$k}->{sdelta} = $d;
+                        $Tmp{$k}->{ssamples} = $sbefore;
 		}
 	}
 
@@ -601,9 +606,12 @@ my @Data;
 my $last = [];
 my $time = 0;
 my $delta = undef;
+my $deltaacc = undef;
+my $samplesacc = 0;
 my $ignored = 0;
 my $line;
 my $maxdelta = 1;
+my $totalsamples = 0;
 
 # reverse if needed
 foreach (<>) {
@@ -640,13 +648,8 @@ foreach (sort @Data) {
 	# there may be an extra samples column for differentials:
 	my $samples2 = undef;
 	if ($stack =~ /^(.*)\s+?(\d+(?:\.\d*)?)$/) {
-		$samples2 = $samples;
-		($stack, $samples) = $stack =~ (/^(.*)\s+?(\d+(?:\.\d*)?)$/);
-	}
-	$delta = undef;
-	if (defined $samples2) {
-		$delta = $samples2 - $samples;
-		$maxdelta = abs($delta) if abs($delta) > $maxdelta;
+		($stack, $samples2) = $stack =~ (/^(.*)\s+?(\d+(?:\.\d*)?)$/);
+                $delta = $samples2 - $samples;
 	}
 
 	# for chain graphs, annotate waker frames with "_[w]", for later
@@ -665,15 +668,20 @@ foreach (sort @Data) {
 	}
 
 	# merge frames and populate %Node:
-	$last = flow($last, [ '', split ";", $stack ], $time, $delta);
-
-	if (defined $samples2) {
-		$time += $samples2;
-	} else {
-		$time += $samples;
-	}
+        if (defined $delta) {
+            unless (defined $deltaacc) { $deltaacc = 0; }
+            $last = flow($last, [ '', split ";", $stack ], $time, $deltaacc, $samplesacc);
+            $deltaacc += $delta;
+            $samplesacc += $samples;
+            $totalsamples += $samples;
+            # frame width will be the absolute value of delta
+            $time += abs($delta);
+        } else {
+            $last = flow($last, [ '', split ";", $stack ], $time);
+            $time += $samples;
+        }
 }
-flow($last, [], $time, $delta);
+flow($last, [], $time, $deltaacc, $samplesacc);
 
 warn "Ignored $ignored lines with invalid format\n" if $ignored;
 unless ($time) {
@@ -1072,7 +1080,10 @@ if ($palette) {
 while (my ($id, $node) = each %Node) {
 	my ($func, $depth, $etime) = split ";", $id;
 	my $stime = $node->{stime};
-	my $delta = $node->{delta};
+	my $sdelta = $node->{sdelta};
+        my $edelta = $node->{edelta};
+        my $ssamples = $node->{ssamples};
+        my $esamples = $node->{esamples};
 
 	$etime = $timemax if $func eq "" and $depth == 0;
 
@@ -1093,8 +1104,8 @@ while (my ($id, $node) = each %Node) {
 
 	my $info;
 	if ($func eq "" and $depth == 0) {
-		$info = "all ($samples_txt $countname, 100%)";
-	} else {
+            $func = "all";
+	}
 		my $pct = sprintf "%.2f", ((100 * $samples) / ($timemax * $factor));
 		my $escaped_func = $func;
 		# clean up SVG breaking characters:
@@ -1103,14 +1114,25 @@ while (my ($id, $node) = each %Node) {
 		$escaped_func =~ s/>/&gt;/g;
 		$escaped_func =~ s/"/&quot;/g;
 		$escaped_func =~ s/_\[[kwij]\]$//;	# strip any annotation
-		unless (defined $delta) {
+		unless (defined $sdelta) {
 			$info = "$escaped_func ($samples_txt $countname, $pct%)";
 		} else {
-			my $d = $negate ? -$delta : $delta;
-			my $deltapct = sprintf "%.2f", ((100 * $d) / ($timemax * $factor));
-			$deltapct = $d > 0 ? "+$deltapct" : $deltapct;
-			$info = "$escaped_func ($samples_txt $countname, $pct%; $deltapct%)";
-		}
+			my $d = $edelta - $sdelta;
+                        my $s = $esamples - $ssamples;
+                        my $deltapct = undef;
+                        if ($s == 0) {
+                            $deltapct = "&#x221e;";
+                        } else {
+                            $deltapct = sprintf "%.2f", (100 * ($d / $s));
+                        }
+                        my $totaldeltapct = sprintf "%.2f", (100 * ($d / $totalsamples));
+                        if ($d > 0) {
+                            $info = "$escaped_func (+$d $countname, +$deltapct% self, +$totaldeltapct% total)";
+                        } elsif ($d < 0) {
+                            $info = "$escaped_func ($d $countname, $deltapct% self, $totaldeltapct% total)";
+                        } else {
+                            $info = "$escaped_func (no change)";
+                        }
 	}
 
 	my $nameattr = { %{ $nameattr{$func}||{} } }; # shallow clone
@@ -1126,8 +1148,10 @@ while (my ($id, $node) = each %Node) {
 		$color = $vdgrey;
 	} elsif ($func eq "-") {
 		$color = $dgrey;
-	} elsif (defined $delta) {
-		$color = color_scale($delta, $maxdelta);
+	} elsif (defined $sdelta) {
+                my $d = $edelta - $sdelta;
+                my $s = $esamples - $ssamples;
+                $color = color_scale($s == 0 ? 1.0 : ($d / $s));
 	} elsif ($palette) {
 		$color = color_map($colors, $func);
 	} else {

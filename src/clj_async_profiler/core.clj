@@ -1,5 +1,5 @@
 (ns clj-async-profiler.core
-  (:require [clj-async-profiler.post-processing :refer [post-process-stacks]]
+  (:require [clj-async-profiler.post-processing :as post-proc]
             [clojure.java.io :as io]
             [clojure.java.shell :as sh]
             [clojure.string :as str])
@@ -262,11 +262,30 @@
         flamegraph-file (tmp-results-file (format "%02d-%s-flamegraph" id (name event)) "svg")
         [f samples] (if-let [transform (get options :transform identity)]
                       (let [tfile (tmp-internal-file "transformed-profile" "txt")]
-                        [tfile (post-process-stacks stacks-file tfile transform)])
+                        [tfile (post-proc/post-process-stacks stacks-file tfile transform)])
                       [stacks-file nil])]
     (run-flamegraph-script f flamegraph-file options)
     (swap! flamegraph-file->metadata assoc flamegraph-file {:samples samples})
     flamegraph-file))
+
+(defn generate-diffgraph
+  "Generate a diff flamegraph SVG file from two profiles, identified by their IDs
+  or filenames. For rendering-related options, see `stop`. Extra options:
+
+  :normalize? - normalize the numbers so that the total number of stacks in two
+                runs are the same (default: true)."
+  [profile-before profile-after options]
+  (let [{id1 :id, stack1 :stacks-file, ev1 :event} (find-profile profile-before)
+        {id2 :id, stack2 :stacks-file, ev2 :event} (find-profile profile-after)
+        _ (when-not (= ev1 ev2)
+            (throw (ex-info "Profiler runs must be of the same event type."
+                            {:before ev1, :after ev2})))
+        diff-file (tmp-internal-file "diff-stacks" "txt")
+        _ (post-proc/generate-diff-file stack1 stack2 diff-file options)
+        diffgraph-file (tmp-results-file
+                        (format "%02d_%02d-%s-diff" id1 id2 (name ev1)) "svg")]
+    (run-flamegraph-script diff-file diffgraph-file options)
+    diffgraph-file))
 
 (defn stop
   "Stop the currently runnning profiler and and save the results into a temporary
