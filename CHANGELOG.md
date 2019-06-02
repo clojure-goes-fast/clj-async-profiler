@@ -1,8 +1,14 @@
 # Changelog
 
-### 0.3.2-SNAPSHOT (unreleased)
+### 0.4.0 (2019-06-02)
 
-- [#10](https://github.com/clojure-goes-fast/clj-async-profiler/issues/10): Adds
+- Add support for differential profiles.
+- Refine browser UI.
+- Allow to pass profiler run IDs instead of full filenames to `generate-*`
+  functions.
+- Change the format of generated filenames. They now include a run ID and event
+  type.
+- [#10](https://github.com/clojure-goes-fast/clj-async-profiler/issues/10): Add
   support for SVG's `width` and `height` options.
 
 ### 0.3.1 (2019-03-15)
