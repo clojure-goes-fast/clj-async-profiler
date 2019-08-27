@@ -75,7 +75,7 @@
                 (recur (unchecked-inc-int frame-end)))))))))
 
 (defn remove-lambda-ids
-  "Transform that removes numeric IDs next to anonymous functionas and `eval`
+  "Transform that removes numeric IDs next to anonymous functions and `eval`
   blocks. This is necessary to render a useful diffgraph if the diffed runs were
   launched from the REPL."
   [^String s]
