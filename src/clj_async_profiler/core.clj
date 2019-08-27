@@ -288,7 +288,7 @@
     diffgraph-file))
 
 (defn stop
-  "Stop the currently runnning profiler and and save the results into a temporary
+  "Stop the currently running profiler and save the results into a temporary
   file. Return the file object with the results. Available options:
 
   :pid - process to attach to (default: current process)
