@@ -13,6 +13,20 @@
       (.substring  s start end)
       "")))
 
+(defn- frame-has-special-char?
+  "Clojure demunger is slow. If there are no special characters munged in the
+  frame, we can take a faster path."
+  [^String frame]
+  (loop [i 0]
+    (let [uscore (.indexOf frame "_" i)
+          next-char-idx (inc uscore)]
+      (if (= uscore -1)
+        false
+        (if (and (< next-char-idx (.length ^String frame))
+                 (Character/isUpperCase (.charAt frame next-char-idx)))
+          true
+          (recur next-char-idx))))))
+
 (defn demunge-java-clojure-frames
   "Transform that demunges Java and Clojure stackframes."
   [^String s]
@@ -42,17 +56,11 @@
                 ;; Clojure frame
                 (let [^String frame (.substring s frame-beg dot)
                       new-frame (.replace frame \/ \.)
-                      new-frame (let [uscore (.indexOf new-frame "_")
-                                      ;; Clojure demunger is slow. If there are
-                                      ;; no special characters munged in the
-                                      ;; frame, take a faster path.
-                                      next-char-idx (inc uscore)]
-                                  (if (and (< next-char-idx (.length ^String new-frame))
-                                           (Character/isUpperCase (.charAt frame next-char-idx)))
-                                    (Compiler/demunge new-frame)
-                                    (-> ^String new-frame
-                                        (.replace \_ \-)
-                                        (.replace \$ \/))))
+                      new-frame (if (frame-has-special-char? new-frame)
+                                  (Compiler/demunge new-frame)
+                                  (-> ^String new-frame
+                                      (.replace \_ \-)
+                                      (.replace \$ \/)))
                       ;; Check if next frame has the same name, and if so, drop it.
                       ^String possible-next-frame (.concat frame ".invokeStatic")
                       next-frame-end (min (+ frame-end (.length possible-next-frame) 1)
