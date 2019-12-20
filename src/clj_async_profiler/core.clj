@@ -366,6 +366,8 @@
   []
   (doseq [f (.listFiles (io/file temp-directory "results"))]
     (.delete ^java.io.File f))
+  (doseq [f (.listFiles (io/file temp-directory "internal"))]
+    (.delete ^java.io.File f))
   (reset! next-run-id 0)
   (reset! run-id->stacks-file {})
   (reset! flamegraph-file->metadata {}))
