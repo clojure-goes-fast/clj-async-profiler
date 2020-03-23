@@ -13,7 +13,7 @@ from the safepoint bias problem. It operates by attaching a native Java agent to
 a running JVM process and collecting the stack traces samples by using
 HotSpot-specific APIs. Current version of async-profiler that is used by
 clj-async-profiler is
-[1.6](https://github.com/jvm-profiling-tools/async-profiler/blob/master/CHANGELOG.md#16-2019-09-09).
+[1.7](https://github.com/jvm-profiling-tools/async-profiler/blob/master/CHANGELOG.md#17---2020-03-17).
 
 FlameGraph is a set of scripts to
 generate [flame graphs](http://www.brendangregg.com/flamegraphs.html). Flame
