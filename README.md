@@ -13,7 +13,7 @@ from the safepoint bias problem. It operates by attaching a native Java agent to
 a running JVM process and collecting the stack traces samples by using
 HotSpot-specific APIs. Current version of async-profiler that is used by
 clj-async-profiler is
-[1.5](https://github.com/jvm-profiling-tools/async-profiler/blob/master/CHANGELOG.md#14---2018-06-24).
+[1.6](https://github.com/jvm-profiling-tools/async-profiler/blob/master/CHANGELOG.md#16-2019-09-09).
 
 FlameGraph is a set of scripts to
 generate [flame graphs](http://www.brendangregg.com/flamegraphs.html). Flame
@@ -29,15 +29,15 @@ If you run clj-async-profiler on MacOS, no extra steps are required.
 
 If you are running GNU/Linux, you need to do the following:
 
-1. Ensure that `perf_event_paranoid` is set to 1:
+1. Ensure that `perf_event_paranoid` is set to 1 or less:
 
 ```
 $ cat /proc/sys/kernel/perf_event_paranoid
 1
 ```
 
-If it prints 2, it means you are running a newer Linux kernel. You have to set
-it to 1 to allow async-profiler to use kernel profiling data.
+If it prints 2, you have to set it to 1 to allow async-profiler to use kernel
+profiling data.
 
 ```
 $ echo 1 | sudo tee /proc/sys/kernel/perf_event_paranoid
@@ -50,21 +50,6 @@ to install JDK debug symbols. E.g., on Ubuntu that would be the package
 `openjdk-8-dbg`.
 
 ## Usage
-
-**JDK9+:** you must start the JVM with option `-Djdk.attach.allowAttachSelf`,
-otherwise the agent will not be able to dynamically attach to the running
-process. For Leiningen, add `:jvm-opts ["-Djdk.attach.allowAttachSelf"]` to
-`project.clj`. For Boot, start the process with environment variable
-`BOOT_JVM_OPTIONS="-Djdk.attach.allowAttachSelf"`.
-
-From [async-profiler
-README](https://github.com/jvm-profiling-tools/async-profiler#restrictionslimitations):
-It is highly recommended to use `-XX:+UnlockDiagnosticVMOptions
--XX:+DebugNonSafepoints` JVM flags. Without those flags the profiler will still
-work correctly but results might be less accurate. Without these options, there
-is a high chance that simple inlined methods will not appear in the profile.
-When agent is attached at runtime CompiledMethodLoad JVMTI event enables debug
-info, but only for methods compiled after the event is turned on.
 
 Add `com.clojure-goes-fast/clj-async-profiler` to your dependencies:
 
@@ -95,12 +80,29 @@ Option map for each profiling command can have a `:pid` value. If it is
 provided, an external JVM process with this PID will be sampled, otherwise the
 current process is targeted.
 
+### JVM options
+
+**JDK9+:** you must start the JVM with option `-Djdk.attach.allowAttachSelf`,
+otherwise the agent will not be able to dynamically attach to the running
+process. For Leiningen, add `:jvm-opts ["-Djdk.attach.allowAttachSelf"]` to
+`project.clj`. For Boot, start the process with environment variable
+`BOOT_JVM_OPTIONS="-Djdk.attach.allowAttachSelf"`.
+
+From [async-profiler
+README](https://github.com/jvm-profiling-tools/async-profiler#restrictionslimitations):
+It is highly recommended to use `-XX:+UnlockDiagnosticVMOptions
+-XX:+DebugNonSafepoints` JVM flags. Without those flags the profiler will still
+work correctly but results might be less accurate. Without these options, there
+is a high chance that simple inlined methods will not appear in the profile.
+When agent is attached at runtime CompiledMethodLoad JVMTI event enables debug
+info, but only for methods compiled after the event is turned on.
+
 ## Running on non-x64 platforms
 
 clj-async-profiler ships with native libraries only for x64 Linux/OSX and Linux
 ARM. To use it on other [supported
 platforms](https://github.com/jvm-profiling-tools/async-profiler#supported-platforms),
-you should to the following:
+you should do the following:
 
 1. Build
    [async-profiler](https://github.com/jvm-profiling-tools/async-profiler#building)

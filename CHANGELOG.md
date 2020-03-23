@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.4.1 (2020-03-23)
+
+- Update vendored async-profiler libraries to
+  [1.6](https://github.com/jvm-profiling-tools/async-profiler/blob/master/CHANGELOG.md#16-2019-09-09).
+- Fix the bug with Clojure special characters not being properly demunged in stackframes.
+
 ### 0.4.0 (2019-06-02)
 
 - Add support for differential profiles.
