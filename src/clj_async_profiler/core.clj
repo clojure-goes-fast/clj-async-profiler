@@ -149,6 +149,7 @@
 (defonce ^:private next-run-id (atom 0))
 (defonce ^:private run-id->stacks-file (atom {}))
 (defonce ^:private flamegraph-file->metadata (atom {}))
+(defonce ^:private default-options (atom {}))
 (defonce ^:private start-options (atom nil))
 
 (defn find-profile [run-id-or-stacks-file]
@@ -219,7 +220,8 @@
   :silent? - if true, only return the event types, don't print them."
   ([] (list-event-types {}))
   ([options]
-   (let [pid (or (:pid options) (get-self-pid))
+   (let [options (merge @default-options options)
+         pid (or (:pid options) (get-self-pid))
          f (tmp-internal-file "list" "txt")
          _ (attach-agent pid (make-command-string "list" {:file f}))
          output (slurp f)
@@ -235,7 +237,8 @@
   :pid - process to attach to (default: current process)"
   ([] (status {}))
   ([options]
-   (let [pid (or (:pid options) (get-self-pid))
+   (let [options (merge @default-options options)
+         pid (or (:pid options) (get-self-pid))
          f (tmp-internal-file "status" "txt")]
      (attach-agent pid (make-command-string "status" {:file f}))
      (slurp f))))
@@ -250,7 +253,8 @@
   :event - event to profile, see `list-event-types` (default: :cpu)"
   ([] (start {}))
   ([options]
-   (let [pid (or (:pid options) (get-self-pid))
+   (let [options (merge @default-options options)
+         pid (or (:pid options) (get-self-pid))
          f (tmp-internal-file "start" "txt")
          _ (attach-agent pid (make-command-string "start" (assoc options :file f)))
          msg (slurp f)]
@@ -263,7 +267,8 @@
   "Generate a flamegraph SVG file from a collapsed stacks file, identified either
   by its filename, or numerical ID. For available options, see `stop`."
   [run-id-or-stacks-file options]
-  (let [{:keys [id stacks-file event]} (find-profile run-id-or-stacks-file)
+  (let [options (merge @default-options options)
+        {:keys [id stacks-file event]} (find-profile run-id-or-stacks-file)
         flamegraph-file (tmp-results-file (format "%02d-%s-flamegraph" id (name event)) "svg")
         [f samples] (if-let [transform (get options :transform identity)]
                       (let [tfile (tmp-internal-file "transformed-profile" "txt")]
@@ -280,7 +285,8 @@
   :normalize? - normalize the numbers so that the total number of stacks in two
                 runs are the same (default: true)."
   [profile-before profile-after options]
-  (let [{id1 :id, stack1 :stacks-file, ev1 :event} (find-profile profile-before)
+  (let [options (merge @default-options options)
+        {id1 :id, stack1 :stacks-file, ev1 :event} (find-profile profile-before)
         {id2 :id, stack2 :stacks-file, ev2 :event} (find-profile profile-after)
         _ (when-not (= ev1 ev2)
             (throw (ex-info "Profiler runs must be of the same event type."
@@ -311,7 +317,8 @@
                regular flamegraph, true for reverse)"
   ([] (stop {}))
   ([options]
-   (let [pid (or (:pid options) (get-self-pid))
+   (let [options (merge @default-options options)
+         pid (or (:pid options) (get-self-pid))
          ^String status-msg (status options)
          _ (when-not (.contains status-msg "is running")
              (throw (ex-info status-msg {})))
@@ -377,3 +384,10 @@
   (reset! next-run-id 0)
   (reset! run-id->stacks-file {})
   (reset! flamegraph-file->metadata {}))
+
+(defn set-default-profiling-options
+  "Set the map of default options that will be used for all subsequent profiling
+  runs. Defaults will be merged with explicit options with lower priority."
+  [default-options-map]
+  {:pre [(map? default-options-map)]}
+  (reset! default-options default-options-map))
