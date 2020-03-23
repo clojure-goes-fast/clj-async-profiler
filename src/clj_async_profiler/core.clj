@@ -167,14 +167,17 @@
   (let [^String rt-name (.getName (ManagementFactory/getRuntimeMXBean))]
     (subs rt-name 0 (.indexOf rt-name "@"))))
 
-(defn- make-command-string [command options]
+(defn- make-command-string
+  [command {:keys [file event interval framebuf threads]
+            :or {event :cpu, interval 1000000}}]
   (case command
-    "list" (format "%s,file=%s" command (:file options))
-    "status" (format "%s,file=%s" command (:file options))
-    "start" (format "%s,event=%s,file=%s,interval=%s,%scollapsed"
-                    command (name (:event options :cpu)) (:file options)
-                    (:interval options 1000000) (if (:threads options) "threads," ""))
-    "stop" (format "%s,file=%s,collapsed" command (:file options))))
+    "list" (format "%s,file=%s" command file)
+    "status" (format "%s,file=%s" command file)
+    "start" (format "%s,event=%s,file=%s,interval=%s,%s%scollapsed"
+                    command (name event) file interval
+                    (if framebuf (str "framebuf=" framebuf) "")
+                    (if threads "threads," ""))
+    "stop" (format "%s,file=%s,collapsed" command file)))
 
 (defonce ^:private virtual-machines (atom {}))
 
@@ -242,6 +245,7 @@
 
   :pid - process to attach to (default: current process)
   :interval - sampling interval in nanoseconds (default: 1000000 - 1ms)
+  :framebuf - size of the buffer for stack frames (default: 1000000 - 1MB)
   :threads - profile each thread separately
   :event - event to profile, see `list-event-types` (default: :cpu)"
   ([] (start {}))

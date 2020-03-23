@@ -4,6 +4,9 @@
 
 - Update vendored async-profiler libraries to
   [1.7](https://github.com/jvm-profiling-tools/async-profiler/blob/master/CHANGELOG.md#17---2020-03-17).
+- Add ability to customize the frame buffer size with `:framebuf` option to
+  `start` and `profile`.
+
 ### 0.4.1 (2020-03-23)
 
 - Update vendored async-profiler libraries to
