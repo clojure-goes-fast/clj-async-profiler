@@ -23,4 +23,9 @@
   []
   (with-pass-thru _
     (require '[clj-async-profiler.core :as prof])
-    ((resolve 'prof/list-event-types))))
+    ;; Check if agent can attach at all.
+    ((resolve 'prof/list-event-types))
+    ;; Try profiling a little bit and verify that a file is created.
+    ((resolve 'prof/start) {:event :itimer})
+    (reduce *' (range 1 100000))
+    (assert (.exists ((resolve 'prof/stop) {:generate-flamegraph? false})))))
