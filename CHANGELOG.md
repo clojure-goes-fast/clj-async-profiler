@@ -1,6 +1,6 @@
 # Changelog
 
-### 0.5.0-SNAPSHOT (unreleased)
+### 0.5.0 (2020-12-16)
 
 - Update vendored async-profiler libraries to
   [1.8.2](https://github.com/jvm-profiling-tools/async-profiler/blob/master/CHANGELOG.md#182---2020-11-02).
