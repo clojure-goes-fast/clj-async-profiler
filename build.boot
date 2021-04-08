@@ -1,7 +1,7 @@
 (task-options!
  pom {:project     'com.clojure-goes-fast/clj-async-profiler
-      :version     "0.5.0"
-      :description "Clojure wrapper around Java's async-profiler"
+      :version     "1.0.0-SNAPSHOT"
+      :description "Embeddable Clojure profiler (based on async-profiler)"
       :url         "https://github.com/clojure-goes-fast/clj-async-profiler"
       :scm         {:url "https://github.com/clojure-goes-fast/clj-async-profiler"}
       :license     {"Eclipse Public License"
@@ -10,7 +10,7 @@
 
 (set-env! :resource-paths #{"vendor" "res" "src"}
           :source-paths   #{"src"}
-          :dependencies   '[[org.clojure/clojure "1.10.0" :scope "provided"]])
+          :dependencies   '[[org.clojure/clojure "1.10.3" :scope "provided"]])
 
 (deftask build
   "Build the project."

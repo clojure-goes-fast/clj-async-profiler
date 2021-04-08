@@ -79,7 +79,9 @@ a { text-decoration: none; }
                  URL (.getContentLength (.openConnection ^URL file)))
         ext (get-extension (str file))]
     (doto (.getResponseHeaders exchange)
-      (.add "Content-Type" (if (= ext "svg") "image/svg+xml" "text/plain"))
+      (.add "Content-Type" (cond (= ext "svg") "image/svg+xml"
+                                 (= ext "html") "text/html; charset=utf-8"
+                                 :else "text/plain"))
       (.add "Content-Length" (str length)))
 
     (.sendResponseHeaders exchange HttpURLConnection/HTTP_OK

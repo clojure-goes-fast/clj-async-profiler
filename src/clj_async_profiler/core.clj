@@ -1,5 +1,6 @@
 (ns clj-async-profiler.core
   (:require [clj-async-profiler.post-processing :as post-proc]
+            [clj-async-profiler.render :as render]
             [clojure.java.io :as io]
             [clojure.java.shell :as sh]
             [clojure.string :as str])
@@ -264,26 +265,23 @@
        (throw (ex-info msg {}))))))
 
 (defn generate-flamegraph
-  "Generate a flamegraph SVG file from a collapsed stacks file, identified either
+  "Generate a flamegraph HTML file from a collapsed stacks file, identified either
   by its filename, or numerical ID. For available options, see `stop`."
   [run-id-or-stacks-file options]
   (let [options (merge @default-options options)
         {:keys [id stacks-file event]} (find-profile run-id-or-stacks-file)
-        flamegraph-file (tmp-results-file (format "%02d-%s-flamegraph" id (name event)) "svg")
-        [f samples] (if-let [transform (get options :transform identity)]
-                      (let [tfile (tmp-internal-file "transformed-profile" "txt")]
-                        [tfile (post-proc/post-process-stacks stacks-file tfile transform)])
-                      [stacks-file nil])]
-    (run-flamegraph-script f flamegraph-file options)
-    (swap! flamegraph-file->metadata assoc flamegraph-file {:samples samples})
+        flamegraph-file (tmp-results-file (format "%02d-%s-flamegraph"
+                                                  id (name event)) "html")
+        compact-profile (post-proc/read-raw-profile-file-to-compact-profile
+                         stacks-file (get options :transform identity))]
+    (spit flamegraph-file (render/render-html-flamegraph compact-profile options))
+    (swap! flamegraph-file->metadata assoc flamegraph-file
+           {:samples (:total-samples (meta compact-profile))})
     flamegraph-file))
 
 (defn generate-diffgraph
   "Generate a diff flamegraph SVG file from two profiles, identified by their IDs
-  or filenames. For rendering-related options, see `stop`. Extra options:
-
-  :normalize? - normalize the numbers so that the total number of stacks in two
-                runs are the same (default: true)."
+  or filenames. For rendering-related options, see `stop`."
   [profile-before profile-after options]
   (let [options (merge @default-options options)
         {id1 :id, stack1 :stacks-file, ev1 :event} (find-profile profile-before)
@@ -291,11 +289,11 @@
         _ (when-not (= ev1 ev2)
             (throw (ex-info "Profiler runs must be of the same event type."
                             {:before ev1, :after ev2})))
-        diff-file (tmp-internal-file "diff-stacks" "txt")
-        _ (post-proc/generate-diff-file stack1 stack2 diff-file options)
+        diff-profile (post-proc/generate-compact-diff-profile
+                      stack1 stack2 (get options :transform identity))
         diffgraph-file (tmp-results-file
-                        (format "%02d_%02d-%s-diff" id1 id2 (name ev1)) "svg")]
-    (run-flamegraph-script diff-file diffgraph-file options)
+                        (format "%02d_%02d-%s-diff" id1 id2 (name ev1)) "html")]
+    (spit diffgraph-file (render/render-html-diffgraph diff-profile options))
     diffgraph-file))
 
 (defn stop
@@ -308,13 +306,7 @@
   :min-width - minimum width in pixels for a frame to be shown on a flamegraph.
                Use this if the resulting flamegraph is too big and hangs your
                browser (default: nil, recommended: 1-5)
-  :width     - width of the generated flamegraph (default: 1200px, recommended to change for big screens)
-  :height    - height of the generated flamegraph
-  :title     - title of the generated flamegraph (default: \"Flame Graph\")
-  :reverse?  - if true, generate the reverse flamegraph which grows from callees
-               up to callers (default: false)
-  :icicle?   - if true, invert the flamegraph upside down (default: false for
-               regular flamegraph, true for reverse)"
+  :title     - title of the generated flamegraph (default: \"Flame Graph\")"
   ([] (stop {}))
   ([options]
    (let [options (merge @default-options options)
