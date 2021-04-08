@@ -142,17 +142,6 @@ Copyright 2017-2019 Andrei Pangin
 
 ---
 
-[flamegraph.pl](flamegraph.pl) is distributed under CDDL-1.0.
-See [COMMON_DEVELOPMENT_AND_DISTRIBUTION_LICENSE](license/COMMON_DEVELOPMENT_AND_DISTRIBUTION_LICENSE) file. The original file location
-is
-[https://github.com/brendangregg/FlameGraph/blob/master/flamegraph.pl](https://github.com/brendangregg/FlameGraph/blob/master/flamegraph.pl).
-
-Copyright 2016 Netflix, Inc.  
-Copyright 2011 Joyent, Inc.  All rights reserved.  
-Copyright 2011 Brendan Gregg.  All rights reserved.
-
----
-
 [lein-simpleton](https://github.com/tailrecursion/lein-simpleton) is distributed
 under the Eclipse Public License.
 See [ECLIPSE_PUBLIC_LICENSE](license/ECLIPSE_PUBLIC_LICENSE).

@@ -132,35 +132,6 @@
   []
   (or @async-profiler-agent-path @inferred-agent-path))
 
-;;; Flamegraph generation
-
-(def flamegraph-script-path (atom nil))
-
-(defn- flamegraph-script
-  "Get the flamegraph.pl file. If the value of `flamegraph-script-path` is not
-  nil, return it, otherwise extract the script from the JAR."
-  []
-  (or @flamegraph-script-path (unpack-from-jar "flamegraph.pl")))
-
-(defn run-flamegraph-script
-  "Run Flamegraph script on the provided stacks file, rendering the SVG result."
-  [in-stacks-file out-svg-file {:keys [min-width reverse? icicle? width height title]
-                                :or {icicle? reverse?}}]
-  (let [args (flatten ["perl" (flamegraph-script) "--colors=clojure"
-                       (if min-width [(str "--minwidth=" min-width)] [])
-                       (if width [(str "--width=" width)] [])
-                       (if height [(str "--height=" height)] [])
-                       (if title [(str "--title=" title)] [])
-                       (if reverse? ["--reverse"] [])
-                       (if icicle? ["--inverted"] [])
-                       (str in-stacks-file)])
-        p (apply sh/sh args)]
-    (if (zero? (:exit p))
-      (let [f (io/file out-svg-file)]
-        (io/copy (:out p) f)
-        f)
-      (throw (ex-info (:err p) {:cmd args})))))
-
 ;;; Profiling
 
 ;; Used to assign sequential IDs to profiler runs, so that just the ID instead
