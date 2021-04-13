@@ -134,11 +134,26 @@
         (throw (ex-info (str "File " f " does not exist.") {})))
       {:id (if id (Integer/parseInt id) -1), :stacks-file f, :event (keyword (or event :cpu))})))
 
+(defmacro ^:private get-self-pid*
+  "This macro expands into proper way of obtaining self PID on JDK9+, and digs
+  into internals on JDK8."
+  []
+  (if (try (resolve 'java.lang.ProcessHandle)
+           (catch ClassNotFoundException _))
+    `(.pid (java.lang.ProcessHandle/current))
+    `(let [runtime# (ManagementFactory/getRuntimeMXBean)
+           jvm# (.get (doto (.getDeclaredField (class runtime#) "jvm")
+                        (.setAccessible true))
+                      runtime#)]
+       (.invoke (doto (.getDeclaredMethod (class jvm#) "getProcessId"
+                                          (into-array Class []))
+                  (.setAccessible true))
+                jvm# (object-array [])))))
+
 (defn get-self-pid
   "Returns the process ID of the current JVM process."
   []
-  (let [^String rt-name (.getName (ManagementFactory/getRuntimeMXBean))]
-    (subs rt-name 0 (.indexOf rt-name "@"))))
+  (get-self-pid*))
 
 (defn- make-command-string
   [command {:keys [file event interval framebuf threads]
