@@ -142,14 +142,6 @@ Copyright 2017-2019 Andrei Pangin
 
 ---
 
-[lein-simpleton](https://github.com/tailrecursion/lein-simpleton) is distributed
-under the Eclipse Public License.
-See [ECLIPSE_PUBLIC_LICENSE](license/ECLIPSE_PUBLIC_LICENSE).
-
-Copyright 2013 Fogus and contributors.
-
----
-
 clj-async-profiler is distributed under the Eclipse Public License.
 See [ECLIPSE_PUBLIC_LICENSE](license/ECLIPSE_PUBLIC_LICENSE).
 
