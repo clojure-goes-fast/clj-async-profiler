@@ -1,24 +1,9 @@
-;; HTTP serving parts were extracted from lein-simpleton[1] to avoid extra dependencies.
-;; Copyright (C) 2013 Fogus and contributors. lein-simpleton is distributed
-;; under the Eclipse Public License, the same as Clojure.
-;; [1] https://github.com/tailrecursion/lein-simpleton
-
 (ns clj-async-profiler.ui
   (:require [clj-async-profiler.core :as core]
+            [clj-async-profiler.wwws :as wwws :refer [redirect respond]]
             [clojure.java.io :as io]
             [clojure.string :as str])
-  (:import (com.sun.net.httpserver HttpHandler HttpServer HttpExchange)
-           (java.io File FileNotFoundException)
-           (java.net HttpURLConnection InetSocketAddress URL URLDecoder)))
-
-(defn- respond
-  ([exchange body]
-   (respond exchange body HttpURLConnection/HTTP_OK))
-  ([^HttpExchange exchange, ^String body, code]
-   (.sendResponseHeaders exchange code 0)
-   (doto (.getResponseBody exchange)
-     (.write (.getBytes body))
-     (.close))))
+  (:import java.io.File))
 
 (def ^:private ui-state (atom {}))
 
@@ -69,89 +54,52 @@ a { text-decoration: none; }
                    (if (< sz 1024) (str sz " b") (format "%.1f Kb" (/ sz 1024.0)))))
          str/join))))
 
-(defn- get-extension [^String filename]
-  (subs filename (inc (.lastIndexOf filename "."))))
-
-(defn- serve [^HttpExchange exchange file]
-  (let [body-served (not= (.getRequestMethod exchange) "HEAD")
-        length (condp instance? file
-                 File (.length ^File file)
-                 URL (.getContentLength (.openConnection ^URL file)))
-        ext (get-extension (str file))]
-    (doto (.getResponseHeaders exchange)
-      (.add "Content-Type" (cond (= ext "svg") "image/svg+xml"
-                                 (= ext "html") "text/html; charset=utf-8"
-                                 :else "text/plain"))
-      (.add "Content-Length" (str length)))
-
-    (.sendResponseHeaders exchange HttpURLConnection/HTTP_OK
-                          (if body-served length -1))
-    (when body-served
-      (with-open [from (io/input-stream file)
-                  to (io/output-stream (.getResponseBody exchange))]
-        (io/copy from to)))))
-
-(defn- redirect [^HttpExchange exchange, url]
-  (.set (.getResponseHeaders exchange) "Location" (str url))
-  (.sendResponseHeaders exchange HttpURLConnection/HTTP_SEE_OTHER -1))
-
-(defn- split-url-params [uri]
-  (rest (re-matches  #"([^?]+)(\?\S*)?" uri)))
-
-(defn- handler [^HttpExchange exchange, base]
+(defn- handler [{:keys [path params]} base]
   (try
-    (let [[uri params] (split-url-params (str (.getRequestURI exchange)))
-          uri (URLDecoder/decode uri)
-          files (->> (.listFiles (io/file base))
+    (let [files (->> (.listFiles (io/file base))
                      (remove #(.isDirectory ^File %))
                      sort)]
-      (cond (= uri "/toggle-show-raw")
+      (cond (= path "/toggle-show-raw")
             (do (swap! ui-state update :show-raw-files not)
-                (redirect exchange "/"))
+                (redirect "/"))
 
-            (= uri "/start-profiler")
-            (do (core/start {:event (keyword (second (re-find #"event=([^&]+)" (str params))))})
-                (redirect exchange "/"))
+            (= path "/start-profiler")
+            (do (core/start {:event (keyword (params "event"))})
+                (redirect "/"))
 
-            (= uri "/stop-profiler")
+            (= path "/stop-profiler")
             (do (core/stop)
-                (redirect exchange "/"))
+                (redirect "/"))
 
-            (= uri "/clear-results")
+            (= path "/clear-results")
             (do (core/clear-results)
-                (redirect exchange "/"))
+                (redirect "/"))
 
-            (= uri "/")
+            (= path "/")
             (let [files (if (:show-raw-files @ui-state)
                           files
-                          (remove #(= (get-extension (str %)) "txt") files))]
-              (.add (.getResponseHeaders exchange) "Content-Type" "text/html")
-              (respond exchange (main-page uri files)))
+                          (remove #(= (wwws/get-extension (str %)) "txt") files))]
+              {:body (main-page path files)})
 
-            (= uri "/favicon.png")
-            (serve exchange (io/resource "favicon.png"))
+            (= path "/favicon.png")
+            {:body (io/resource "favicon.png")
+             :cache? true}
 
             :else
-            (let [f (io/file (str base uri))]
+            (let [f (io/file (str base path))]
               (if (contains? (set files) f)
-                (serve exchange f)
-                (respond exchange (str "Not found: " f) HttpURLConnection/HTTP_NOT_FOUND)))))
+                {:body f, :cache? true}
+                (respond 404 (str "Not found: " f))))))
     (catch Exception e
       (binding [*out* *err*] (println e))
-      (respond exchange (format "<body>%s<br><a href=\"/\">Back</a></body>" (.getMessage e))
-               HttpURLConnection/HTTP_INTERNAL_ERROR))))
+      (respond 500 (format "<body>%s<br><a href=\"/\">Back</a></body>"
+                           (.getMessage e))))))
 
 (defonce current-server (atom nil))
 
 (defn start-server
-  "Starts a simple webserver with the local directory `dir` as its root."
+  "Starts a simple profiler webserver with the local directory `dir` as its root."
   [port dir]
-  (when @current-server (.stop ^HttpServer @current-server 0))
+  (when @current-server (wwws/stop-server @current-server))
   (println "Starting server on port" port)
-  (reset! current-server
-          (doto (HttpServer/create (InetSocketAddress. port) 0)
-            (.createContext "/" (proxy [HttpHandler] []
-                                  (handle [^HttpExchange exchange]
-                                    (handler exchange dir))))
-            (.setExecutor nil)
-            (.start))))
+  (reset! current-server (wwws/start-server #(handler % dir) port)))
