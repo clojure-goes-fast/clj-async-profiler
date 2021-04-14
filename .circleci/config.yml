@@ -10,7 +10,7 @@ jobs:
           key: project-{{ checksum "build.boot" }}
       - run: BOOT_CLOJURE_VERSION=1.8.0 boot test
       - run: BOOT_CLOJURE_VERSION=1.9.0 boot test
-      - run: BOOT_CLOJURE_VERSION=1.10.0 boot test
+      - run: BOOT_CLOJURE_VERSION=1.10.3 boot test
       - save_cache:
           paths:
             - ~/.m2
@@ -29,9 +29,7 @@ jobs:
       - checkout
       - restore_cache:
           key: project-{{ checksum "build.boot" }}
-      - run: BOOT_CLOJURE_VERSION=1.8.0 boot test
-      - run: BOOT_CLOJURE_VERSION=1.9.0 boot test
-      - run: BOOT_CLOJURE_VERSION=1.10.0 boot test
+      - run: BOOT_CLOJURE_VERSION=1.10.3 boot test
       - save_cache:
           paths:
             - ~/.m2
