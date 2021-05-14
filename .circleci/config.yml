@@ -8,6 +8,9 @@ jobs:
       clj-version:
         type: string
         default: 1.11.1
+      jvm-opts:
+        type: string
+        default: -Xms512m -Xmx1024m -Djdk.attach.allowAttachSelf -Dclj-async-profiler.debug
       is-alpine:
         type: boolean
         default: false
@@ -31,7 +34,7 @@ jobs:
           key: project-{{ checksum "build.boot" }}
     environment:
       BOOT_CLOJURE_VERSION: << parameters.clj-version >>
-      BOOT_JVM_OPTIONS: "-Xms512m -Xmx1024m -Djdk.attach.allowAttachSelf -Dclj-async-profiler.debug"
+      BOOT_JVM_OPTIONS: << parameters.jvm-opts >>
       BOOT_WATCHERS_DISABLE: "yes"
       DEBUG: "yes"
 
@@ -44,10 +47,15 @@ workflows:
               docker-image:
                 - clojure:openjdk-8-boot-bullseye
                 - clojure:openjdk-11-boot-bullseye
-                - clojure:temurin-17-boot-focal
-                - clojure:temurin-18-boot-focal
               clj-version: ["1.9.0", "1.10.3", "1.11.1"]
       - test:
-          name: test-alpine
-          docker-image: clojure:temurin-17-boot-alpine
-          is-alpine: true
+          matrix:
+            parameters:
+              docker-image:
+                - clojure:temurin-17-boot-focal
+                - clojure:temurin-18-boot-focal
+              clj-version: ["1.10.3", "1.11.1"]
+          # add-opens needed for Virgil to work
+          jvm-opts: >-
+            -Xms512m -Xmx1024m -Djdk.attach.allowAttachSelf -Dclj-async-profiler.debug
+            --add-opens jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED

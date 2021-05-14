@@ -10,24 +10,39 @@
                     "http://www.eclipse.org/legal/epl-v10.html"}}
  push {:repo "clojars"})
 
-(set-env! :resource-paths #{"vendor" "res" "src"}
-          :source-paths   #{"src"}
+(set-env! :resource-paths #{"vendor" "res"}
+          :source-paths   #{"src" "test"}
           :dependencies   '[[org.clojure/clojure "1.11.1" :scope "provided"]])
 
 (deftask build
   "Build the project."
   []
-  (comp (pom) (jar)))
+  (comp (javac)
+        (sift :to-resource [#"clj_async_profiler/.+\.clj$"])
+        (pom) (jar)))
 
 (ns-unmap 'boot.user 'test)
 (deftask test
   "Check if agent can attach at all."
   []
-  (with-pass-thru _
-    (require '[clj-async-profiler.core :as prof])
-    ;; Check if agent can attach at all.
-    ((resolve 'prof/list-event-types))
-    ;; Try profiling a little bit and verify that a file is created.
-    ((resolve 'prof/start) {:event :itimer})
-    (reduce *' (range 1 100000))
-    (assert (.exists ((resolve 'prof/stop) {:generate-flamegraph? false})))))
+  (comp (javac)
+        (with-pass-thru _
+          (require '[clj-async-profiler.core :as prof]
+                   '[clojure.test :as test])
+          ;; Check if agent can attach at all.
+          ((resolve 'prof/list-event-types))
+          ;; Try profiling a little bit and verify that a file is created.
+          ((resolve 'prof/start) {:event :itimer})
+          (reduce *' (range 1 100000))
+          (let [stacks-file ((resolve 'prof/stop) {:generate-flamegraph? false})]
+            (assert (.exists stacks-file))
+            (assert (> (.length stacks-file) 10000)))
+
+          (require 'clj-async-profiler.post-processing-test)
+          (assert ((resolve 'test/successful?) ((resolve 'test/run-all-tests)
+                                                #"clj-async-profiler\..+test$"))))))
+
+(comment ;; Development
+  (set-env! :dependencies #(conj % '[virgil "LATEST"]))
+  (require '[virgil.boot :as virgil])
+  (boot (virgil/javac* :verbose true)))
