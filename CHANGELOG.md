@@ -1,5 +1,13 @@
 # Changelog
 
+### 0.5.1 (2021-07-30)
+
+- Update vendored async-profiler libraries to
+  [1.8.6](https://github.com/jvm-profiling-tools/async-profiler/releases/tag/v1.8.6).
+- Add prepackaged binaries for Linux x86 and Linux AArch64.
+- Add early access prepackaged binary for MacOS AArch64 (M1). Note that this is
+  not an experimental version.
+
 ### 0.5.0 (2020-12-16)
 
 - Update vendored async-profiler libraries to
