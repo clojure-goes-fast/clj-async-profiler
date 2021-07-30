@@ -98,6 +98,12 @@
 (defn- arm? []
   (re-find #"(?i)arm" (System/getProperty "os.arch")))
 
+(defn- aarch64? []
+  (re-find #"(?i)aarch64" (System/getProperty "os.arch")))
+
+(defn- x86? []
+  (= (System/getProperty "os.arch") "x86"))
+
 (defn- unpack-from-jar [resource-name]
   (let [path (io/file temp-directory resource-name)]
     (when-not (.exists path)
@@ -109,9 +115,14 @@
   is not `nil`, return it, otherwise extract the .so from the JAR."
   []
   (or @async-profiler-agent-path
-      (unpack-from-jar (cond (macos?) "libasyncProfiler-darwin.so"
-                             (arm?)   "libasyncProfiler-linux-arm.so"
-                             :else    "libasyncProfiler-linux.so"))))
+      (unpack-from-jar (if (macos?)
+                         (if (aarch64?)
+                           "libasyncProfiler-darwin-aarch64.so"
+                           "libasyncProfiler-darwin.so")
+                         (cond (arm?)     "libasyncProfiler-linux-arm.so"
+                               (aarch64?) "libasyncProfiler-linux-aarch64.so"
+                               (x86?)     "libasyncProfiler-linux-x86.so"
+                               :else      "libasyncProfiler-linux.so")))))
 
 ;;; Flamegraph generation
 
