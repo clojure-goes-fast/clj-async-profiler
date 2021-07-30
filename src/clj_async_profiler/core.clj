@@ -268,8 +268,10 @@
          pid (or (:pid options) (get-self-pid))
          f (tmp-internal-file "start" "txt")
          _ (attach-agent pid (make-command-string "start" (assoc options :file f)))
-         msg (slurp f)]
-     (if (.startsWith ^String msg "Started")
+         msg (try (slurp f)
+                  ;; On some platforms (seemingly, on M1), start file does not exist.
+                  (catch java.io.FileNotFoundException _))]
+     (if (or (nil? msg) (.startsWith ^String msg "Started"))
        (do (reset! start-options options)
            msg)
        (throw (ex-info msg {}))))))
