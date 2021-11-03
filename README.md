@@ -51,7 +51,14 @@ to install JDK debug symbols. E.g., on Ubuntu that would be the package
 
 ## Usage
 
-Add `com.clojure-goes-fast/clj-async-profiler` to your dependencies:
+Add `com.clojure-goes-fast/clj-async-profiler` to your dependencies. This is the
+latest stable version:
+
+```clojure
+[com.clojure-goes-fast/clj-async-profiler "0.5.1"]
+```
+
+There is also an experimental version:
 
 [![](https://clojars.org/com.clojure-goes-fast/clj-async-profiler/latest-version.svg)](https://clojars.org/com.clojure-goes-fast/clj-async-profiler)
 
