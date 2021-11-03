@@ -187,7 +187,7 @@
     "status" (format "%s,file=%s" command file)
     "start" (format "%s,event=%s,file=%s,interval=%s,%s%scollapsed"
                     command (name event) file interval
-                    (if framebuf (str "framebuf=" framebuf) "")
+                    (if framebuf (str "framebuf=" framebuf ",") "")
                     (if threads "threads," ""))
     "stop" (format "%s,file=%s,collapsed" command file)))
 
