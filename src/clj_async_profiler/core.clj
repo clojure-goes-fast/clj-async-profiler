@@ -8,6 +8,10 @@
            java.text.SimpleDateFormat
            java.util.Date))
 
+(defn- dbg-println [& more]
+  (when (System/getProperty "clj-async-profiler.debug")
+    (apply println "[clj-async-profiler]" more)))
+
 ;;; Temp file machinery
 
 (defonce ^:private temp-directory
@@ -75,6 +79,7 @@
   (delay
    (let [tools-jar (tools-jar-url)
          [loader dynamic?] (get-classloader)]
+     (dbg-println "Top level dynamic classloader:" loader)
      (if dynamic?
        (.addURL loader tools-jar)
        (add-url-to-classloader-reflective loader tools-jar))
@@ -117,6 +122,7 @@
                     (aarch64?) "libasyncProfiler-linux-aarch64.so"
                     (musl?)    "libasyncProfiler-linux-musl-x64.so"
                     :else      "libasyncProfiler-linux-x64.so")]
+      (dbg-println "Inferred native library:" lib)
       (unpack-from-jar lib))))
 
 (defn- async-profiler-agent

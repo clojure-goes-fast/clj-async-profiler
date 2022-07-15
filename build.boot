@@ -12,7 +12,7 @@
 
 (set-env! :resource-paths #{"vendor" "res" "src"}
           :source-paths   #{"src"}
-          :dependencies   '[[org.clojure/clojure "1.10.0" :scope "provided"]])
+          :dependencies   '[[org.clojure/clojure "1.11.1" :scope "provided"]])
 
 (deftask build
   "Build the project."

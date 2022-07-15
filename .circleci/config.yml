@@ -1,37 +1,28 @@
-version: 2
-jobs:
-  test-jdk8:
-    working_directory: ~/project
-    docker:
-      - image: clojure:openjdk-8-boot-2.8.2-alpine
-    steps:
-      - checkout
-      - restore_cache:
-          key: project-{{ checksum "build.boot" }}
-      - run: BOOT_CLOJURE_VERSION=1.8.0 boot test
-      - run: BOOT_CLOJURE_VERSION=1.9.0 boot test
-      - run: BOOT_CLOJURE_VERSION=1.10.0 boot test
-      - save_cache:
-          paths:
-            - ~/.m2
-            - ~/.boot/cache/lib
-            - ~/.boot/cache/bin
-          key: project-{{ checksum "build.boot" }}
-    environment:
-      BOOT_JVM_OPTIONS: "-Xms512m -Xmx1024m"
-      BOOT_WATCHERS_DISABLE: "yes"
+version: 2.1
 
-  test-jdk11:
+jobs:
+  test:
+    parameters:
+      docker-image:
+        type: string
+      clj-version:
+        type: string
+        default: 1.11.1
+      is-alpine:
+        type: boolean
+        default: false
     working_directory: ~/project
     docker:
-      - image: clojure:openjdk-11-boot-2.8.2
+      - image: << parameters.docker-image >>
     steps:
       - checkout
       - restore_cache:
           key: project-{{ checksum "build.boot" }}
-      - run: BOOT_CLOJURE_VERSION=1.8.0 boot test
-      - run: BOOT_CLOJURE_VERSION=1.9.0 boot test
-      - run: BOOT_CLOJURE_VERSION=1.10.0 boot test
+      - when:
+          condition: << parameters.is-alpine >>
+          steps:
+            - run: apk add --no-cache libstdc++
+      - run: boot test
       - save_cache:
           paths:
             - ~/.m2
@@ -39,11 +30,24 @@ jobs:
             - ~/.boot/cache/bin
           key: project-{{ checksum "build.boot" }}
     environment:
-      BOOT_JVM_OPTIONS: "-Xms512m -Xmx1024m -Djdk.attach.allowAttachSelf"
+      BOOT_CLOJURE_VERSION: << parameters.clj-version >>
+      BOOT_JVM_OPTIONS: "-Xms512m -Xmx1024m -Djdk.attach.allowAttachSelf -Dclj-async-profiler.debug"
       BOOT_WATCHERS_DISABLE: "yes"
+      DEBUG: "yes"
+
 workflows:
-  version: 2
   test_all_jdks:
     jobs:
-      - test-jdk8
-      - test-jdk11
+      - test:
+          matrix:
+            parameters:
+              docker-image:
+                - clojure:openjdk-8-boot-bullseye
+                - clojure:openjdk-11-boot-bullseye
+                - clojure:temurin-17-boot-focal
+                - clojure:temurin-18-boot-focal
+              clj-version: ["1.9.0", "1.10.3", "1.11.1"]
+      - test:
+          name: test-alpine
+          docker-image: clojure:temurin-17-boot-alpine
+          is-alpine: true
