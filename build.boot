@@ -1,3 +1,5 @@
+(System/setProperty "os.version" "10.5") ;; Hack for MacOS
+
 (task-options!
  pom {:project     'com.clojure-goes-fast/clj-async-profiler
       :version     "0.5.1"
