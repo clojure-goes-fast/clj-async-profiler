@@ -95,34 +95,35 @@
 (defn- macos? []
   (re-find #"(?i)mac" (System/getProperty "os.name")))
 
-(defn- arm? []
-  (re-find #"(?i)arm" (System/getProperty "os.arch")))
-
 (defn- aarch64? []
   (re-find #"(?i)aarch64" (System/getProperty "os.arch")))
 
-(defn- x86? []
-  (= (System/getProperty "os.arch") "x86"))
+(defn- musl? []
+  (try (some #(.contains (.getCanonicalPath ^java.io.File %) "musl")
+             (.listFiles (java.io.File. "/proc/self/map_files")))
+       (catch Exception _ false)))
 
 (defn- unpack-from-jar [resource-name]
   (let [path (io/file temp-directory resource-name)]
     (when-not (.exists path)
-      (io/copy (io/input-stream (io/resource resource-name)) path))
+      (if-let [resource (io/resource resource-name)]
+        (io/copy (io/input-stream resource) path)
+        (throw (ex-info (str "Could not find " resource-name " in resources.") {}))))
     (.getAbsolutePath path)))
+
+(def ^:private inferred-agent-path
+  (delay
+    (let [lib (cond (macos?)   "libasyncProfiler-darwin-universal.so"
+                    (aarch64?) "libasyncProfiler-linux-aarch64.so"
+                    (musl?)    "libasyncProfiler-linux-musl-x64.so"
+                    :else      "libasyncProfiler-linux-x64.so")]
+      (unpack-from-jar lib))))
 
 (defn- async-profiler-agent
   "Get the async profiler agent file. If the value of `async-profiler-agent-path`
   is not `nil`, return it, otherwise extract the .so from the JAR."
   []
-  (or @async-profiler-agent-path
-      (unpack-from-jar (if (macos?)
-                         (if (aarch64?)
-                           "libasyncProfiler-darwin-aarch64.so"
-                           "libasyncProfiler-darwin.so")
-                         (cond (arm?)     "libasyncProfiler-linux-arm.so"
-                               (aarch64?) "libasyncProfiler-linux-aarch64.so"
-                               (x86?)     "libasyncProfiler-linux-x86.so"
-                               :else      "libasyncProfiler-linux.so")))))
+  (or @async-profiler-agent-path @inferred-agent-path))
 
 ;;; Flamegraph generation
 

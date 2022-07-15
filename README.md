@@ -104,10 +104,17 @@ is a high chance that simple inlined methods will not appear in the profile.
 When agent is attached at runtime CompiledMethodLoad JVMTI event enables debug
 info, but only for methods compiled after the event is turned on.
 
-## Running on non-x64 platforms
+## Platform support
 
-clj-async-profiler ships with native libraries only for x64 Linux/OSX and Linux
-ARM. To use it on other [supported
+clj-async-profiler ships with the precompiled native libraries that
+async-profiler itself
+[distributes](https://github.com/jvm-profiling-tools/async-profiler#download).
+These include:
+
+- **Linux**: x64, x64 with musl libc (Alpine), aarch64 (arm64)
+- **MacOS**: x64/aarch64 (universal binary)
+
+To use clj-async-profiler on other [supported
 platforms](https://github.com/jvm-profiling-tools/async-profiler#supported-platforms),
 you should do the following:
 
@@ -115,7 +122,7 @@ you should do the following:
    [async-profiler](https://github.com/jvm-profiling-tools/async-profiler#building)
    for the desired platform.
 2. Put the resulting `libasyncProfiler.so` in a place accessible by your JVM
-   process.
+   process (and which also allows code execution from).
 3. Execute from Clojure:
 
    ```clj
