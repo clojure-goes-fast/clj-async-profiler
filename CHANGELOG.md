@@ -1,5 +1,14 @@
 # Changelog
 
+### 0.5.2 (2022-07-15)
+
+- Update vendored async-profiler libraries to
+  [2.8.2]https://github.com/jvm-profiling-tools/async-profiler/releases/tag/v2.8.2).
+- Add prepackaged binary for Linux x64 MUSL libc.
+- **BREAKING:** Remove prepackaged binaries for Linux x86 and Linux ARMv7
+  (arm32) since async-profiler no longer ships them. These platforms continue to
+  be supported but you'll have to build binaries for them manually.
+
 ### 0.5.1 (2021-07-30)
 
 - Update vendored async-profiler libraries to
