@@ -45,4 +45,12 @@
 (comment ;; Development
   (set-env! :dependencies #(conj % '[virgil "LATEST"]))
   (require '[virgil.boot :as virgil])
-  (boot (virgil/javac* :verbose true)))
+  (boot (virgil/javac* :verbose true))
+
+  ;; Extra dependencies for example app.
+  (set-env! :dependencies #(into % '[[aleph "0.4.7-alpha10"]
+                                     [ring/ring-core "1.9.4"]
+                                     [ring/ring-defaults "0.3.3"]
+                                     [compojure "1.6.2"]
+                                     [cheshire "5.10.1"]
+                                     [instaparse "1.4.10"]])))
