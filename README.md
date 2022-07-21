@@ -1,69 +1,56 @@
-# clj-async-profiler [![](https://circleci.com/gh/clojure-goes-fast/clj-async-profiler/tree/master.png)](https://circleci.com/gh/clojure-goes-fast/clj-async-profiler)
+# clj-async-profiler [![CircleCI](https://dl.circleci.com/status-badge/img/gh/clojure-goes-fast/clj-async-profiler/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/clojure-goes-fast/clj-async-profiler/tree/master) ![](https://img.shields.io/badge/dependencies-none-brightgreen)
 
-- _Introduction: http://clojure-goes-fast.com/blog/profiling-tool-async-profiler/_
-- _Tips, tricks, new features in 0.3.0: http://clojure-goes-fast.com/blog/clj-async-profiler-tips/_
+**clj-async-profiler** is an embedded high-precision performance profiler for
+Clojure. Embedded means there is no software to install on your system, instead
+you add the profiler to your application as a dependency. From there, you can
+operate the profiler either programmatically or via a web UI. During profiling,
+clj-async-profiler has very low overhead, so it is suitable for usage even in
+highly loaded production scenarios.
 
-This library is a thin Clojure wrapper around the
-excellent
-[async-profiler](https://github.com/jvm-profiling-tools/async-profiler)
-and [FlameGraph](https://github.com/brendangregg/FlameGraph).
+clj-async-profiler presents the profiling results as an interactive
+[flamegraph](http://www.brendangregg.com/flamegraphs.html). You can navigate the
+flamegraph, query it, change parameters and adapt the results for easier
+interpretation.
 
-async-profiler is a low overhead sampling profiler for JVM that does not suffer
-from the safepoint bias problem. It operates by attaching a native Java agent to
-a running JVM process and collecting the stack traces samples by using
-HotSpot-specific APIs. Current version of async-profiler that is used by
-clj-async-profiler is
-[1.7](https://github.com/jvm-profiling-tools/async-profiler/blob/master/CHANGELOG.md#17---2020-03-17).
 
-FlameGraph is a set of scripts to
-generate [flame graphs](http://www.brendangregg.com/flamegraphs.html). Flame
-graphs are a visualization of profiled software, allowing the most frequent
-code-paths to be identified quickly and accurately.
+![](docs/flamegraph-screenshot.png)
 
-## Preparation
+<p align = "center"><sup>
+Example flamegraph. <a href="https://htmlpreview.github.io/?https://github.com/clojure-goes-fast/clj-async-profiler/blob/1.0.0/docs/flamegraph-example.html">Click</a> to open the interactive version.
+</sup></p>
 
-clj-async-profiler is only supported on GNU/Linux and MacOS. See
-https://github.com/jvm-profiling-tools/async-profiler#supported-platforms.
-
-If you run clj-async-profiler on MacOS, no extra steps are required.
-
-If you are running GNU/Linux, you need to do the following:
-
-1. Ensure that `perf_event_paranoid` is set to 1 or less:
-
-```
-$ cat /proc/sys/kernel/perf_event_paranoid
-1
-```
-
-If it prints 2, you have to set it to 1 to allow async-profiler to use kernel
-profiling data.
-
-```
-$ echo 1 | sudo tee /proc/sys/kernel/perf_event_paranoid
-```
-
-[See also](https://github.com/jvm-profiling-tools/async-profiler#basic-usage).
-
-2. If you see stackframes like `/usr/lib/.../libjvm.so`, it means that you have
-to install JDK debug symbols. E.g., on Ubuntu that would be the package
-`openjdk-8-dbg`.
+To collect the profiling data, clj-async-profiler utilizes
+[async-profiler](https://github.com/jvm-profiling-tools/async-profiler) which is
+a low overhead sampling profiler for Java. Current version of async-profiler
+that is used by clj-async-profiler is
+[2.8.2](https://github.com/jvm-profiling-tools/async-profiler/releases/tag/v2.8.2).
 
 ## Usage
 
-Add `com.clojure-goes-fast/clj-async-profiler` to your dependencies. This is the
-latest stable version:
+clj-async-profiler is only supported on GNU/Linux and MacOS. On Linux, you need
+to allow async-profiler to use kernel profiling data by setting these two
+variables ([see
+also](https://github.com/jvm-profiling-tools/async-profiler#basic-usage)):
 
-```clojure
-[com.clojure-goes-fast/clj-async-profiler "0.5.1"]
+```
+sudo sysctl -w kernel.perf_event_paranoid=1
+sudo sysctl -w kernel.kptr_restrict=0
 ```
 
-There is also an experimental version:
+Next, add `com.clojure-goes-fast/clj-async-profiler` to your dependencies. This
+is the latest version:
 
 [![](https://clojars.org/com.clojure-goes-fast/clj-async-profiler/latest-version.svg)](https://clojars.org/com.clojure-goes-fast/clj-async-profiler)
 
-clj-async-profiler exposes an all-in-one facade for generating profiling flame
-graphs. The most common usage scenario looks like this:
+**JDK11+:** you must start your application with JVM option
+`-Djdk.attach.allowAttachSelf`, otherwise the profiling agent will not be able
+to dynamically attach to the running process. For Leiningen, add `:jvm-opts
+["-Djdk.attach.allowAttachSelf"]` to `project.clj`. For tools.deps, add the same
+`:jvm-opts` to `deps.edn` or write `-J-Djdk.attach.allowAttachSelf` explicitly
+in your REPL command.
+
+`clj-async-profiler.core` exposes an all-in-one facade for generating profiling
+flame graphs. The most common usage scenario looks like this:
 
 ```clojure
 (require '[clj-async-profiler.core :as prof])
@@ -72,7 +59,7 @@ graphs. The most common usage scenario looks like this:
 (prof/profile (dotimes [i 10000] (reduce + (range i))))
 
 ;; The resulting flamegraph will be stored in /tmp/clj-async-profiler/results/
-;; You can view the SVG directly from there or start a local webserver:
+;; You can view the HTML file directly from there or start a local webserver:
 
 (prof/serve-files 8080) ; Serve on port 8080
 ```
@@ -87,13 +74,15 @@ Option map for each profiling command can have a `:pid` value. If it is
 provided, an external JVM process with this PID will be sampled, otherwise the
 current process is targeted.
 
-### JVM options
+For a detailed description of clj-async-profiler's more advanced features, check
+the following blog posts:
 
-**JDK9+:** you must start the JVM with option `-Djdk.attach.allowAttachSelf`,
-otherwise the agent will not be able to dynamically attach to the running
-process. For Leiningen, add `:jvm-opts ["-Djdk.attach.allowAttachSelf"]` to
-`project.clj`. For Boot, start the process with environment variable
-`BOOT_JVM_OPTIONS="-Djdk.attach.allowAttachSelf"`.
+- [Introduction](http://clojure-goes-fast.com/blog/profiling-tool-async-profiler/)
+- [Tips, tricks, new features in 0.3.0](http://clojure-goes-fast.com/blog/clj-async-profiler-tips/)
+- [Diffgraphs](http://clojure-goes-fast.com/blog/clj-async-profiler-040/)
+- [Dynamic transforms](http://clojure-goes-fast.com/blog/clj-async-profiler-100/)
+
+### Extra tuning
 
 From [async-profiler
 README](https://github.com/jvm-profiling-tools/async-profiler#restrictionslimitations):
@@ -101,8 +90,12 @@ It is highly recommended to use `-XX:+UnlockDiagnosticVMOptions
 -XX:+DebugNonSafepoints` JVM flags. Without those flags the profiler will still
 work correctly but results might be less accurate. Without these options, there
 is a high chance that simple inlined methods will not appear in the profile.
-When agent is attached at runtime CompiledMethodLoad JVMTI event enables debug
+When agent is attached at runtime, CompiledMethodLoad JVMTI event enables debug
 info, but only for methods compiled after the event is turned on.
+
+If you see stackframes like `/usr/lib/.../libjvm.so`, it means that you have to
+install JDK debug symbols. E.g., on Ubuntu that would be the package
+`openjdk-11-dbg`.
 
 ## Platform support
 
@@ -133,16 +126,16 @@ you should do the following:
 ## License
 
 async-profiler is distributed under Apache-2.0.
-See [APACHE_PUBLIC_LICENSE](license/APACHE_PUBLIC_LICENSE) file. The location of the original
+See [APACHE_PUBLIC_LICENSE](docs/APACHE_PUBLIC_LICENSE) file. The location of the original
 repository
 is
 [https://github.com/jvm-profiling-tools/async-profiler](https://github.com/jvm-profiling-tools/async-profiler).
 
-Copyright 2017-2019 Andrei Pangin
+Copyright 2017-2022 Andrei Pangin
 
 ---
 
 clj-async-profiler is distributed under the Eclipse Public License.
-See [ECLIPSE_PUBLIC_LICENSE](license/ECLIPSE_PUBLIC_LICENSE).
+See [ECLIPSE_PUBLIC_LICENSE](docs/ECLIPSE_PUBLIC_LICENSE).
 
-Copyright 2017-2019 Alexander Yakushev
+Copyright 2017-2022 Alexander Yakushev
