@@ -1,5 +1,29 @@
 # Changelog
 
+### 1.0.0 (2022-07-22)
+
+- **BREAKING:** Replace SVG flamegraphs with HTML flamegraphs. It is not
+  possible to generate SVG flamegraphs anymore.
+- Add dynamic configuration into the flamegraph. User can now change the
+  following without regenerating a flamegraph:
+  - minimal frame width
+  - frame sort order
+  - normal/inverse orientation (for icicles graphs)
+  - stack transforms
+- Remove the following options passed to `generate-flamegraph`: `:reverse?`,
+  `:icicle?`, `:width`, `:height`, `:min-width`. These options are no longer
+  needed at generation time since they are configurable within the HTML
+  flamegraph itself.
+- Introduce `:predefined-transforms` option that bakes in the provided
+  transforms into the generated HTML (see docstring for
+  `clj-async-profiler.core/stop`).
+- Enable browser caching of flamegraph files. Repeated opening of the same
+  flamegraph in browser will no longer refetch the file from the server.
+- Rewrite stack post-processing code into Java for faster generation of
+  flamegraphs.
+- Fix the 10-something second delay on MacOS when starting the profiler for the
+  first time.
+
 ### 0.5.2 (2022-07-15)
 
 - Update vendored async-profiler libraries to

@@ -2,7 +2,7 @@
 
 (task-options!
  pom {:project     'com.clojure-goes-fast/clj-async-profiler
-      :version     "1.0.0-SNAPSHOT"
+      :version     "1.0.0"
       :description "Embeddable Clojure profiler (based on async-profiler)"
       :url         "https://github.com/clojure-goes-fast/clj-async-profiler"
       :scm         {:url "https://github.com/clojure-goes-fast/clj-async-profiler"}
