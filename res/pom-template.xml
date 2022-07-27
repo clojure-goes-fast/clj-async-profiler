@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId></groupId>
+  <artifactId></artifactId>
+  <name></name>
+  <description>Embedded high-precision Clojure profiler (based on async-profiler)</description>
+  <url>https://github.com/clojure-goes-fast/clj-async-profiler</url>
+  <licenses>
+    <license>
+      <url>http://www.eclipse.org/legal/epl-v10.html</url>
+      <name>Eclipse Public License</name>
+      <comments/>
+    </license>
+  </licenses>
+  <packaging>jar</packaging>
+  <scm>
+    <url>https://github.com/clojure-goes-fast/clj-async-profiler</url>
+  </scm>
+</project>
