@@ -98,8 +98,8 @@ a { text-decoration: none; }
 (defonce current-server (atom nil))
 
 (defn start-server
-  "Starts a simple profiler webserver with the local directory `dir` as its root."
-  [port dir]
+  "Starts the profiler web UI with the local directory `dir` as its root."
+  [host port dir]
   (when @current-server (wwws/stop-server @current-server))
   (println "Starting server on port" port)
-  (reset! current-server (wwws/start-server #(handler % dir) port)))
+  (reset! current-server (wwws/start-server #(handler % dir) host port)))

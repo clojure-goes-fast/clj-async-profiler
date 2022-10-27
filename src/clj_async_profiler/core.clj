@@ -377,13 +377,25 @@
        (Thread/sleep 1000)))
    (stop options)))
 
-(defn serve-files
-  "Start a simple webserver of the results directory on the provided port."
-  [port]
-  (require 'clj-async-profiler.ui)
-  ((resolve 'clj-async-profiler.ui/start-server) port (io/file temp-directory "results")))
+(defn serve-ui
+  "Start profiler web UI on the given `host` (default: localhost) and `port`."
+  ([port] (serve-ui "localhost" port))
+  ([host port]
+   (require 'clj-async-profiler.ui)
+   ((resolve 'clj-async-profiler.ui/start-server) host port
+    (io/file temp-directory "results"))))
 
-#_(serve-files 8080)
+#_(serve-ui 8080)
+
+(defn ^{:deprecated "1.0.1"} serve-files
+  "DEPRECATED: use `serve-ui` instead.
+
+  For backward compatibility, this function starts a webserver on hostname
+  `0.0.0.0`. This is not recommended for security reasons, instead use
+  `localhost` when launched locally, and a proper internal network IP in
+  production."
+  [port]
+  (serve-ui "0.0.0.0" port))
 
 (defn clear-results
   "Clear all results from /tmp/clj-async-profiler directory."

@@ -77,8 +77,8 @@
 
 (defn start-server
   "Starts a simple webserver with the local directory `dir` as its root."
-  [handler port]
-  (doto (HttpServer/create (InetSocketAddress. port) 0)
+  [handler host port]
+  (doto (HttpServer/create (InetSocketAddress. host port) 0)
     (.createContext "/" (proxy [HttpHandler] []
                           (handle [^HttpExchange exchange]
                             (root-handler exchange handler))))

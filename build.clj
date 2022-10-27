@@ -33,8 +33,7 @@
   opts)
 
 (defn jar
-  "Run the CI pipeline of tests (and build the JAR).
-  Specify :cljs true to run the ClojureScript tests as well."
+  "Compile and package the JAR."
   [opts]
   (bb/clean opts)
   (javac opts)
@@ -42,8 +41,8 @@
     (b/write-pom opts)
     (b/copy-dir {:src-dirs   src+dirs
                  :target-dir class-dir
-                 :include "**"
-                 :ignores [#"pom-template.xml" #".+\.java"]})
+                 :include    "**"
+                 :ignores    [#"pom-template.xml" #".+\.java"]})
     (println "Building jar...")
     (b/jar opts)))
 

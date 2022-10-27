@@ -1,6 +1,7 @@
 (ns clj-async-profiler.core-test
   (:require [clj-async-profiler.core :as sut]
-            [clojure.test :refer :all]))
+            [clojure.test :refer :all])
+  (:import java.net.URL))
 
 (deftest basic-test
   ;; Check if agent can attach at all.
@@ -15,3 +16,15 @@
     (let [fg-file (sut/generate-flamegraph stacks-file {})]
       (is (.exists fg-file))
       (is (> (.length fg-file) 10000)))))
+
+(defn curl-ui [port]
+  (let [conn (.openConnection (URL. (str "http://localhost:" port)))]
+    (.setRequestMethod conn "GET")
+    (.getResponseCode conn)))
+
+(deftest web-ui-test
+  (sut/serve-ui 8085)
+  (is (= 200 (curl-ui 8085)))
+
+  (sut/serve-files 8086)
+  (is (= 200 (curl-ui 8086))))

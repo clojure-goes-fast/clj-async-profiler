@@ -59,9 +59,9 @@ flame graphs. The most common usage scenario looks like this:
 (prof/profile (dotimes [i 10000] (reduce + (range i))))
 
 ;; The resulting flamegraph will be stored in /tmp/clj-async-profiler/results/
-;; You can view the HTML file directly from there or start a local webserver:
+;; You can view the HTML file directly from there or start a local web UI:
 
-(prof/serve-files 8080) ; Serve on port 8080
+(prof/serve-ui 8080) ; Serve on port 8080
 ```
 
 You can also start and stop the profiler manually with `prof/start` and
