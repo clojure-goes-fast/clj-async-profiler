@@ -13,7 +13,7 @@
         :jvm-opts ["-Djdk.attach.allowAttachSelf"]}
 
   :test {:extra-paths ["test" "target/classes"]
-         :extra-deps {io.github.cognitect-labs/test-runner {:git/tag "v0.5.0"
-                                                            :git/sha "48c3c67"}}
+         :extra-deps {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1"
+                                                            :git/sha "dfb30dd"}}
          :exec-fn cognitect.test-runner.api/test
          :jvm-opts ["-Djdk.attach.allowAttachSelf"]}}}

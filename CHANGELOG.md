@@ -1,5 +1,15 @@
 # Changelog
 
+### 1.0.1 (2022-10-27)
+
+- Update vendored async-profiler libraries to
+  [2.8.3](https://github.com/jvm-profiling-tools/async-profiler/releases/tag/v2.8.3).
+- Add a new function `clj-async-profiler.core/serve-ui` which supersedes
+  `serve-files`. `serve-ui` takes an explicit `host` argument. If `host` is not
+  provided, `localhost` is used by default (used to be `0.0.0.0`).
+- The now deprecated `serve-files` still binds to `0.0.0.0` to retain
+  compatibility.
+
 ### 1.0.0 (2022-07-22)
 
 - **BREAKING:** Replace SVG flamegraphs with HTML flamegraphs. It is not
@@ -14,9 +24,8 @@
   `:icicle?`, `:width`, `:height`, `:min-width`. These options are no longer
   needed at generation time since they are configurable within the HTML
   flamegraph itself.
-- Introduce `:predefined-transforms` option that bakes in the provided
-  transforms into the generated HTML (see docstring for
-  `clj-async-profiler.core/stop`).
+- Introduce `:predefined-transforms` option that bakes the provided transforms
+  into the generated HTML (see docstring for `clj-async-profiler.core/stop`).
 - Enable browser caching of flamegraph files. Repeated opening of the same
   flamegraph in browser will no longer refetch the file from the server.
 - Rewrite stack post-processing code into Java for faster generation of

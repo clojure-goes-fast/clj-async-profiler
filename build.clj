@@ -8,7 +8,7 @@
 (defmacro opts+ []
   `(assoc ~'opts
           :lib 'com.clojure-goes-fast/clj-async-profiler
-          :version "1.0.1-SNAPSHOT"
+          :version "1.0.1"
           :resource-dirs ["res" "vendor"]
           :src-pom "res/pom-template.xml"))
 
@@ -27,6 +27,7 @@
          (and alias scope) (conj [(keyword alias "scope") scope]))))))
 
 (defn test "Run all the tests." [opts]
+  (bb/clean opts)
   (javac opts)
   (bb/run-tests (cond-> opts
                   (:clj opts) (assoc :aliases [(:clj opts)])))
