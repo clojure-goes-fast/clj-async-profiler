@@ -12,18 +12,30 @@ const transformFilterTemplate = document.getElementById('transformFilterTemplate
 const transformReplaceTemplate = document.getElementById('transformReplaceTemplate');
 const sidebarToggleButton = document.getElementsByClassName('sidebarToggle')[0];
 const sidebarWidth = document.getElementsByClassName('configCol')[0].offsetWidth
+const qString = new URLSearchParams(window.location.search)
 
 var sidebarVisible = true;
-sidebarToggleButton.innerText = sidebarVisible ? '>' : '<';
+var canvasWidth;
 
-function calculateCanvasWidth() {
-  if (sidebarVisible)
-    return window.innerWidth - sidebarWidth - 36
-  else
-    return window.innerWidth - 36;
+if (qString.get('hide-sidebar') == 'true') {
+  sidebarVisible = false;
 }
 
-var canvasWidth = calculateCanvasWidth();
+function updateSidebarState() {
+  let style = oneByClass(document, 'configCol').style
+  if (sidebarVisible) {
+    style.display = 'block';
+    sidebarToggleButton.innerText = ">";
+    canvasWidth = window.innerWidth - sidebarWidth - 36;
+  } else {
+    style.display = 'none';
+    sidebarToggleButton.innerText = "<";
+    canvasWidth = window.innerWidth - 36;
+  }
+}
+
+updateSidebarState();
+
 var graphTitle = "<<<graphTitle>>>";
 var isDiffgraph = <<<isDiffgraph>>>;
 var normalizeDiff = true, b_scale_factor;
@@ -707,14 +719,6 @@ function applyConfiguration() {
 
 function toggleSidebarVisibility() {
   sidebarVisible = !sidebarVisible;
-  let style = oneByClass(document, 'configCol').style
-  if (sidebarVisible) {
-    style.display = 'block';
-    oneByClass(document, 'sidebarToggle').innerText = ">";
-  } else {
-    style.display = 'none';
-    oneByClass(document, 'sidebarToggle').innerText = "<";
-  }
-  canvasWidth = calculateCanvasWidth();
+  updateSidebarState();
   applyConfiguration();
 }
