@@ -259,6 +259,9 @@ function parseStacksToTreeDiffgraph(stacks, treeRoot) {
     node.self_samples_a += samplesA;
     node.self_samples_b += samplesB;
     node.self_delta += delta;
+    node.total_samples_a += samplesA;
+    node.total_samples_b += samplesB;
+    node.total_delta += delta;
     node.delta_abs += Math.abs(delta);
   }
   console.timeEnd("parseStacksToTreeDiffgraph");
