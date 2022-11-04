@@ -12,7 +12,6 @@ clj-async-profiler presents the profiling results as an interactive
 flamegraph, query it, change parameters and adapt the results for easier
 interpretation.
 
-
 ![](docs/flamegraph-screenshot.png)
 
 <p align = "center"><sup>
@@ -26,6 +25,10 @@ that is used by clj-async-profiler is
 [2.8.3](https://github.com/jvm-profiling-tools/async-profiler/releases/tag/v2.8.3).
 
 ## Usage
+
+_Comprehensive usage guide and in-depth documentation are available at [Clojure
+Goes Fast knowledge
+base](http://clojure-goes-fast.com/kb/profiling/clj-async-profiler/)._
 
 clj-async-profiler is only supported on GNU/Linux and MacOS. On Linux, you need
 to allow async-profiler to use kernel profiling data by setting these two
