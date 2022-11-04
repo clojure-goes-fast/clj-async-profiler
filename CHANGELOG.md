@@ -1,5 +1,11 @@
 # Changelog
 
+### 1.0.2 (2022-11-04)
+
+- Fix diffgraphs incorrectly calculating deltas for topmost frames.
+- Add ability to toggle sidebar visibility using query params.
+- Sort frames by width by default.
+
 ### 1.0.1 (2022-10-27)
 
 - Update vendored async-profiler libraries to
@@ -36,7 +42,7 @@
 ### 0.5.2 (2022-07-15)
 
 - Update vendored async-profiler libraries to
-  [2.8.2]https://github.com/jvm-profiling-tools/async-profiler/releases/tag/v2.8.2).
+  [2.8.2](https://github.com/jvm-profiling-tools/async-profiler/releases/tag/v2.8.2).
 - Add prepackaged binary for Linux x64 MUSL libc.
 - **BREAKING:** Remove prepackaged binaries for Linux x86 and Linux ARMv7
   (arm32) since async-profiler no longer ships them. These platforms continue to
