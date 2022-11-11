@@ -5,6 +5,7 @@
             [clojure.java.shell :as sh]
             [clojure.string :as str])
   (:import java.lang.management.ManagementFactory
+           java.io.File
            java.net.URLClassLoader
            java.text.SimpleDateFormat
            java.util.Date))
@@ -37,7 +38,7 @@
 ;;; Dynamic attach initialization
 
 (defn- tools-jar-url []
-  (let [file (io/file (System/getProperty "java.home"))
+  (let [^File file (io/file (System/getProperty "java.home"))
         file (if (.equalsIgnoreCase (.getName file) "jre")
                (.getParentFile file)
                file)
@@ -82,7 +83,7 @@
          [loader dynamic?] (get-classloader)]
      (dbg-println "Top level dynamic classloader:" loader)
      (if dynamic?
-       (.addURL loader tools-jar)
+       (.addURL ^clojure.lang.DynamicClassLoader loader tools-jar)
        (add-url-to-classloader-reflective loader tools-jar))
      loader)))
 
@@ -146,7 +147,7 @@
   (if (number? run-id-or-stacks-file)
     (@run-id->stacks-file run-id-or-stacks-file)
     ;; When the file was passed directly, infer information from its name.
-    (let [^java.io.File f (io/file run-id-or-stacks-file)
+    (let [^File f (io/file run-id-or-stacks-file)
           [_ id event] (re-matches #"(\d+)-([^-]+)-.+" (.getName f))]
       (when-not (.exists f)
         (throw (ex-info (str "File " f " does not exist.") {})))
@@ -302,7 +303,7 @@
                       stack1 stack2 (get options :transform identity))
         diffgraph-file (tmp-results-file
                         (format "%02d_%02d-%s-diff" id1 id2 (name ev1)) "html")
-        title (str (.getName stack1) " vs " (.getName stack2))]
+        title (str (.getName ^File stack1) " vs " (.getName ^File stack2))]
     (spit diffgraph-file (render/render-html-diffgraph
                           diff-profile (assoc options :title title)))
     diffgraph-file))

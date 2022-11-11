@@ -23,7 +23,7 @@
 (defn- query-string->map [^String params-string]
   (->> (.split (or params-string "") "&")
        (keep (fn [pair] (when-not (str/blank? pair)
-                          (vec (.split pair "=")))))
+                          (vec (.split ^String pair "=")))))
        (into {})))
 
 (defn- serve-file [^HttpExchange exchange, file, cache?]
@@ -77,8 +77,8 @@
 
 (defn start-server
   "Starts a simple webserver with the local directory `dir` as its root."
-  [handler host port]
-  (doto (HttpServer/create (InetSocketAddress. host port) 0)
+  [handler, ^String host, port]
+  (doto (HttpServer/create (InetSocketAddress. host ^int port) 0)
     (.createContext "/" (proxy [HttpHandler] []
                           (handle [^HttpExchange exchange]
                             (root-handler exchange handler))))
