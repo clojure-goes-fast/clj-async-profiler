@@ -1,5 +1,10 @@
 # Changelog
 
+### 1.0.3 (2022-11-16)
+
+- Add `clj-async-profiler.ui/stop-server` function for shutting down the Web UI
+  HTTP server.
+
 ### 1.0.2 (2022-11-04)
 
 - Fix diffgraphs incorrectly calculating deltas for topmost frames.
