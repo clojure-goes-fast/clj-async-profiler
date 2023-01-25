@@ -71,21 +71,21 @@ You can also start and stop the profiler manually with `prof/start` and
 `prof/stop`.
 
 Each profiling command accepts a map of options. See docstrings for each command
-for the list of supported options.
+for the list of supported options, or [Functions and
+options](http://clojure-goes-fast.com/kb/profiling/clj-async-profiler/basic-usage/#functions-and-options).
 
 Option map for each profiling command can have a `:pid` value. If it is
 provided, an external JVM process with this PID will be sampled, otherwise the
 current process is targeted.
 
-For a detailed description of clj-async-profiler's more advanced features, check
-the following blog posts:
+For a detailed description of clj-async-profiler's more advanced features, see
+the documentation pages:
 
-- [Introduction](http://clojure-goes-fast.com/blog/profiling-tool-async-profiler/)
-- [Tips, tricks, new features in 0.3.0](http://clojure-goes-fast.com/blog/clj-async-profiler-tips/)
-- [Diffgraphs](http://clojure-goes-fast.com/blog/clj-async-profiler-040/)
-- [Dynamic transforms](http://clojure-goes-fast.com/blog/clj-async-profiler-100/)
+- [Allocation profiling](http://clojure-goes-fast.com/kb/profiling/clj-async-profiler/allocation-profiling/)
+- [Differential flamegraphs](http://clojure-goes-fast.com/kb/profiling/clj-async-profiler/diffgraphs/)
+- [Profiling in production](http://clojure-goes-fast.com/kb/profiling/clj-async-profiler/production/)
 
-### Extra tuning
+### Tuning for better accuracy
 
 From [async-profiler
 README](https://github.com/jvm-profiling-tools/async-profiler#restrictionslimitations):
@@ -148,11 +148,11 @@ repository
 is
 [https://github.com/jvm-profiling-tools/async-profiler](https://github.com/jvm-profiling-tools/async-profiler).
 
-Copyright 2017-2022 Andrei Pangin
+Copyright 2017-2023 Andrei Pangin
 
 ---
 
 clj-async-profiler is distributed under the Eclipse Public License.
 See [ECLIPSE_PUBLIC_LICENSE](docs/ECLIPSE_PUBLIC_LICENSE).
 
-Copyright 2017-2022 Alexander Yakushev
+Copyright 2017-2023 Alexander Yakushev
