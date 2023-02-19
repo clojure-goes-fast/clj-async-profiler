@@ -1,4 +1,4 @@
-# clj-async-profiler [![CircleCI](https://dl.circleci.com/status-badge/img/gh/clojure-goes-fast/clj-async-profiler/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/clojure-goes-fast/clj-async-profiler/tree/master) ![](https://img.shields.io/badge/dependencies-none-brightgreen)
+# clj-async-profiler [![CircleCI](https://img.shields.io/circleci/build/github/clojure-goes-fast/clj-async-profiler/master.svg)](https://dl.circleci.com/status-badge/redirect/gh/clojure-goes-fast/clj-async-profiler/tree/master) ![](https://img.shields.io/badge/dependencies-none-brightgreen) [![](https://img.shields.io/clojars/dt/com.clojure-goes-fast/clj-async-profiler?color=teal)](https://clojars.org/com.clojure-goes-fast/clj-async-profiler) [![](https://img.shields.io/badge/-changelog-blue.svg)](CHANGELOG.md)
 
 **clj-async-profiler** is an embedded high-precision performance profiler for
 Clojure. Embedded means there is no software to install on your system, instead
