@@ -39,9 +39,9 @@ workflows:
               docker-image:
                 - clojure:openjdk-8-bullseye
                 - clojure:openjdk-11-bullseye
-                - clojure:temurin-17-focal
-                - clojure:temurin-18-focal
-              clj-version: ["1.10", "1.11"]
+                - clojure:temurin-17-jammy
+                - clojure:temurin-20-jammy
+              clj-version: ["1.10", "1.11", "1.12"]
       - test:
           name: test-alpine
           docker-image: clojure:temurin-8-alpine
