@@ -601,6 +601,15 @@ function highlightClear() {
   render(currentRootFrame, currentRootLevel);
 }
 
+function copySelectedFrameAsText() {
+  navigator.clipboard.writeText(currentRootFrame.title);
+}
+
+function copySelectedFrameAsRegex() {
+  let rx = currentRootFrame.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  navigator.clipboard.writeText(rx);
+}
+
 function userTransformsSwap(idx1, idx2) {
   const swap = userTransforms[idx1];
   userTransforms[idx1] = userTransforms[idx2];
