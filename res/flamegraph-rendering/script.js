@@ -38,7 +38,7 @@ updateSidebarState();
 
 var graphTitle = "<<<graphTitle>>>";
 var isDiffgraph = <<<isDiffgraph>>>;
-var normalizeDiff = true, b_scale_factor;
+var normalizeDiff = false, b_scale_factor;
 var reverseGraph = false;
 var idToFrame = [<<<idToFrame>>>];
 var initialStacks = [];
