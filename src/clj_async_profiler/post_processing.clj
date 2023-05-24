@@ -48,7 +48,7 @@
       (let [idx (.indexOf s ";" last-idx)]
         (if (= idx -1)
           (do (.add l (.substring s last-idx))
-              (vec l))
+              l)
           (do (.add l (.substring s last-idx idx))
               (recur (inc idx))))))))
 

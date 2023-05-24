@@ -5,12 +5,6 @@ import static clojure.lang.Compiler.demunge;
 
 public class Helpers {
 
-    public static String safeSubs(String s, int start, int end) {
-        int lng = s.length();
-        return (start >= 0 && end <= lng && start <= end) ?
-            s.substring(start, end) : "";
-    }
-
     // Clojure demunger is slow. If there are no special characters munged in
     // the frame, we can take a faster path.
     public static boolean frameHasSpecialChar(String frame) {
@@ -45,13 +39,13 @@ public class Helpers {
                 sb.append(";");
             if (dot > frameBeg) {
                 // Java or Clojure frame
-                String method = s.substring(dot+1, frameEnd);
-                if ((method.equals("invoke") ||
-                     method.equals("doInvoke") ||
-                     method.equals("invokeStatic") ||
-                     method.equals("invokePrim")) &&
+                int methodLen = frameEnd-dot-1;
+                if ((s.regionMatches(dot+1, "invoke", 0, methodLen) ||
+                     s.regionMatches(dot+1, "doInvoke", 0, methodLen) ||
+                     s.regionMatches(dot+1, "invokeStatic", 0, methodLen) ||
+                     s.regionMatches(dot+1, "invokePrim", 0, methodLen)) &&
                     // Exclude things like clojure/lang/Var.invoke
-                    !"clojure/lang/".equals(safeSubs(s, frameBeg, frameBeg+13))) {
+                    !s.regionMatches(frameBeg, "clojure/lang/", 0, 13)) {
                     // Clojure frame
                     String frame = s.substring(frameBeg, dot);
                     String newFrame = frame.replace('/', '.');
@@ -67,12 +61,18 @@ public class Helpers {
                     }
                     sb.append(newFrame);
 
-                    // Check if next frame has the same name and if so, skip it.
-                    String possibleNextFrame = frame.concat(".invokeStatic");
-                    int nextFrameEnd = Math.min(frameEnd + 1 + possibleNextFrame.length(), lng);
-                    if (possibleNextFrame.equals(safeSubs(s, frameEnd+1, nextFrameEnd)))
-                        frameBeg = Math.min(nextFrameEnd + 1, lng);
-                    else
+                    // Check if next frame has the same name but with Static or
+                    // Prim sufix and, if so, skip it.
+                    int frameLen = frame.length();
+                    int nextFrameNameEnd = frameEnd + 1 + frameLen;
+                    if (s.regionMatches(frameEnd+1, frame, 0, frameLen)) {
+                        if (s.regionMatches(nextFrameNameEnd, ".invokeStatic", 0, 13)) {
+                            frameBeg = nextFrameNameEnd + 13 + 1;
+                        } else if (s.regionMatches(nextFrameNameEnd, ".invokePrim", 0, 11))
+                            frameBeg = nextFrameNameEnd + 11 + 1;
+                        else
+                            frameBeg = frameEnd + 1;
+                    } else
                         frameBeg = frameEnd + 1;
                 } else {
                     // Java frame
