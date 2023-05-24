@@ -41,10 +41,9 @@ public class Helpers {
             if (frameEnd == -1)
                 frameEnd = lng;
             int dot = s.lastIndexOf(".", frameEnd);
-            int slash = s.indexOf("/", frameBeg);
             if (frameBeg > 0)
                 sb.append(";");
-            if (slash > -1 && slash < frameEnd && dot > frameBeg) {
+            if (dot > frameBeg) {
                 // Java or Clojure frame
                 String method = s.substring(dot+1, frameEnd);
                 if ((method.equals("invoke") ||
