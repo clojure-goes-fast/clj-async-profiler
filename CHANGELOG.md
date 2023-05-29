@@ -1,5 +1,12 @@
 # Changelog
 
+### 1.0.4 (2023-05-29)
+
+- Diffgraphs are now non-normalized by default (which is, probably, a less
+  surprising behavior).
+- Add a button to copy the title of the currently selected frame to make writing
+  transforms easier.
+
 ### 1.0.3 (2022-11-16)
 
 - Add `clj-async-profiler.ui/stop-server` function for shutting down the Web UI
