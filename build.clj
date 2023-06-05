@@ -8,7 +8,7 @@
 (defmacro opts+ []
   `(assoc ~'opts
           :lib 'com.clojure-goes-fast/clj-async-profiler
-          :version "1.0.4"
+          :version "1.0.5-SNAPSHOT"
           :resource-dirs ["res" "vendor"]
           :src-pom "res/pom-template.xml"))
 
@@ -51,4 +51,4 @@
   (bb/deploy (opts+)))
 
 ;; To recompile Java class at runtime:
-;; ((requiring-resolve 'virgil.compile/compile-all-java) ["src"])
+;; ((requiring-resolve 'virgil/compile-java) ["src"])

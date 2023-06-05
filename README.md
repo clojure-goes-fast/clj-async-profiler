@@ -133,11 +133,11 @@ tool. Regular build tasks are inside [build.clj](build.clj) and invoked as
 `clojure -T:build test`, `clojure -T:build jar`, etc.
 
 When starting the REPL, you should add `dev` alias on the list so that
-[virgil](https://github.com/ztellman/virgil) is loaded. Then, to compile Java
+[virgil](https://github.com/clojure-goes-fast/virgil) is loaded. Then, to compile Java
 classes in the REPL, do:
 
 ```clojure
-user> ((requiring-resolve 'virgil.compile/compile-all-java) ["src"])
+user> ((requiring-resolve 'virgil/compile-java) ["src"])
 ```
 
 ## License
