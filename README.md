@@ -85,6 +85,10 @@ the documentation pages:
 - [Differential flamegraphs](http://clojure-goes-fast.com/kb/profiling/clj-async-profiler/diffgraphs/)
 - [Profiling in production](http://clojure-goes-fast.com/kb/profiling/clj-async-profiler/production/)
 
+Also check out this video from London Clojurians meetup:
+
+[![Clojure Goes Brrr: a quest for performance](http://img.youtube.com/vi/s3mjVAMNVrA/0.jpg)](http://www.youtube.com/watch?v=s3mjVAMNVrA "Clojure Goes Brrr: a quest for performance")
+
 ### Tuning for better accuracy
 
 From [async-profiler
