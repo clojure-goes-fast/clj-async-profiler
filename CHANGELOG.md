@@ -1,5 +1,10 @@
 # Changelog
 
+### 1.0.5 (2023-08-15)
+
+- Update vendored async-profiler libraries to
+  [2.9](https://github.com/jvm-profiling-tools/async-profiler/releases/tag/v2.9).
+
 ### 1.0.4 (2023-05-29)
 
 - Diffgraphs are now non-normalized by default (which is, probably, a less

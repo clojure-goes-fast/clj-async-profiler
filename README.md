@@ -22,7 +22,7 @@ To collect the profiling data, clj-async-profiler utilizes
 [async-profiler](https://github.com/jvm-profiling-tools/async-profiler) which is
 a low overhead sampling profiler for Java. Current version of async-profiler
 that is used by clj-async-profiler is
-[2.8.3](https://github.com/jvm-profiling-tools/async-profiler/releases/tag/v2.8.3).
+[2.9](https://github.com/jvm-profiling-tools/async-profiler/releases/tag/v2.9).
 
 ## Usage
 
