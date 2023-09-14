@@ -89,6 +89,14 @@ Also check out this video from London Clojurians meetup:
 
 [![Clojure Goes Brrr: a quest for performance](http://img.youtube.com/vi/s3mjVAMNVrA/0.jpg)](http://www.youtube.com/watch?v=s3mjVAMNVrA "Clojure Goes Brrr: a quest for performance")
 
+### Output directory
+
+To not store the potentially large output files in `/tmp`, you can instead set a custom directory using the Java property `clj-async-profiler.output-dir`:
+
+`-Dclj-async-profiler.output-dir=./data`
+
+This is helpful in some cases where the boot drive is kept intentionally small, and you mount large external disks for primary use (like Fly.io).
+
 ### Tuning for better accuracy
 
 From [async-profiler

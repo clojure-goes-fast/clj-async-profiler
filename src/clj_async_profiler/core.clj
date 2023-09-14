@@ -17,7 +17,8 @@
 ;;; Temp file machinery
 
 (defonce ^:private temp-directory
-  (let [root (io/file "/tmp" "clj-async-profiler")]
+  (let [output-dir  (or (System/getProperty "clj-async-profiler.output-dir") "/tmp")
+        root (io/file output-dir "clj-async-profiler")]
     (.mkdirs (io/file root "results"))
     (.mkdirs (io/file root "internal"))
     root))
