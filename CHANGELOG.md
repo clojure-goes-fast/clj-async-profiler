@@ -1,5 +1,10 @@
 # Changelog
 
+### master (unreleased)
+
+- [#28](https://github.com/clojure-goes-fast/clj-async-profiler/pull/28)
+  Customize output dir via a Java property.
+
 ### 1.0.5 (2023-08-15)
 
 - Update vendored async-profiler libraries to

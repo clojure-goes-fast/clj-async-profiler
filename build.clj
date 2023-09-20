@@ -8,7 +8,7 @@
 (defmacro opts+ []
   `(assoc ~'opts
           :lib 'com.clojure-goes-fast/clj-async-profiler
-          :version "1.0.5"
+          :version "1.0.6-SNAPSHOT"
           :resource-dirs ["res" "vendor"]
           :src-pom "res/pom-template.xml"))
 
