@@ -6,11 +6,18 @@
             [org.corfield.build :as bb]))
 
 (defmacro opts+ []
-  `(assoc ~'opts
-          :lib 'com.clojure-goes-fast/clj-async-profiler
+  `(let [url# "https://github.com/clojure-goes-fast/clj-async-profiler"]
+     (-> {:lib 'com.clojure-goes-fast/clj-async-profiler
           :version "1.0.6-SNAPSHOT"
           :resource-dirs ["res" "vendor"]
-          :src-pom "res/pom-template.xml"))
+          :scm {:url url#}
+          :pom-data [[:description "Embedded high-precision Clojure profiler (based on async-profiler)"]
+                     [:url url#]
+                     [:licenses
+                      [:license
+                       [:name "Eclipse Public License"]
+                       [:url "http://www.eclipse.org/legal/epl-v10.html"]]]]}
+         (merge ~'opts))))
 
 (defn javac [opts]
   (b/javac (assoc (#'bb/jar-opts (opts+))
@@ -43,7 +50,7 @@
     (b/copy-dir {:src-dirs   src+dirs
                  :target-dir class-dir
                  :include    "**"
-                 :ignores    [#"pom-template.xml" #".+\.java"]})
+                 :ignores    [#".+\.java"]})
     (println "Building jar...")
     (b/jar opts)))
 
