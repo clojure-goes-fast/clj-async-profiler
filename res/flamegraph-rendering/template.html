@@ -8,7 +8,7 @@
       #hl span {padding: 0 3px 0 3px}
       #status {overflow: hidden; white-space: nowrap}
       #match {overflow: hidden; white-space: nowrap; display: none; float: right; text-align: right}
-      * {box-sizing:border-box,margin:.25em 0}
+      #tooltip {z-index: 9999; border-radius: 2px; padding: 2px 5px 2px 5px; position: absolute; background: white; font-size: 13px; opacity: 0.85; border: 1px solid #e9e9e9; box-shadow: rgba(0, 0, 0, 0.1) 0px 5px 15px 0px; white-space: nowrap;}      * {box-sizing:border-box,margin:.25em 0}
       .col{display:table-cell}
       .col-1{width:5%}
       .col-2{width:15%}
@@ -31,6 +31,7 @@
       <div class="row">
         <div class="graphCol">
           <canvas id='canvas' style='width: 100%;'></canvas>
+          <div id='tooltip' hidden></div>
           <div id='box'><div id='hl'><span></span></div></div>
           <p id='match'>Matched: <span id='matchedLabel'></span></p>
           <p id='status'>&nbsp;</p>

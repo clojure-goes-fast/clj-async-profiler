@@ -6,6 +6,7 @@
 const canvas = document.getElementById('canvas');
 const c = canvas.getContext('2d');
 const hl = document.getElementById('hl');
+const tooltip = document.getElementById('tooltip');
 const status = document.getElementById('status');
 const matchContainer = document.getElementById('match');
 const transformFilterTemplate = document.getElementById('transformFilterTemplate');
@@ -541,6 +542,39 @@ function findFrame(frames, x) {
   return null;
 }
 
+function showTooltip(e) {
+  tooltip.hidden = false;
+
+  var cursor_x  = e.clientX + window.pageXOffset;
+  var cursor_y  = e.clientY + window.pageYOffset;
+
+  let tooltip_w = tooltip.clientWidth;
+  let tooltip_h = tooltip.clientHeight;
+
+  var tooltip_x = cursor_x;
+  var tooltip_y = cursor_y + 22;
+
+  let box_width  = canvas.clientWidth  - 20;
+  let box_height = canvas.clientHeight - 20;
+
+
+  if (cursor_x + tooltip_w > box_width) {
+    let overflow_x = cursor_x + tooltip_w - box_width;
+    tooltip_x = cursor_x - overflow_x;
+  }
+
+  if (cursor_y + tooltip_h > box_height) {
+    tooltip_y = cursor_y - tooltip_h - 10;
+  }
+
+  tooltip.style.left = tooltip_x;
+  tooltip.style.top  = tooltip_y;
+}
+
+function hideTooltip() {
+  tooltip.hidden = true;
+}
+
 canvas.onmousemove = function() {
   const h = Math.floor((reverseGraph ? event.offsetY : (canvasHeight - event.offsetY)) / 16);
   if (h >= 0 && h < levels.length) {
@@ -554,10 +588,10 @@ canvas.onmousemove = function() {
       if (isDiffgraph) {
         var rel_change = (f.total_samples_a == 0) ? 1.0 : f.total_delta / f.total_samples_a;
         var total_change = f.total_delta / tree.total_samples_a;
-        canvas.title = `${f.title}\n(${samples(f.total_delta, true)}, ${ratioToPct(rel_change)} self, ${ratioToPct(total_change)} total)`;
+        tooltip.innerText = `${f.title}\n(${samples(f.total_delta, true)}, ${ratioToPct(rel_change)} self, ${ratioToPct(total_change)} total)`;
         // , self_samples_a: ${f.self_samples_a}, self_samples_b: ${f.self_samples_b},  self_delta: ${f.self_delta},  total_samples_a: ${f.total_samples_a},  total_samples_b: ${f.total_samples_b}, total_delta: ${f.total_delta})`;
       } else
-        canvas.title = f.title + '\n(' + samples(f.width) + ', ' + pct(f.width, levels[0][0].width) + '%)';
+        tooltip.innerText = f.title + '\n(' + samples(f.width) + ', ' + pct(f.width, levels[0][0].width) + '%)';
       canvas.style.cursor = 'pointer';
       canvas.onclick = function() {
         if (f != currentRootFrame) {
@@ -565,7 +599,8 @@ canvas.onmousemove = function() {
           canvas.onmousemove();
         }
       };
-      status.textContent = 'Function: ' + canvas.title;
+      showTooltip(event);
+      status.textContent = 'Function: ' + tooltip.innerText;
       return;
     }
   }
@@ -575,9 +610,9 @@ canvas.onmousemove = function() {
 canvas.onmouseout = function() {
   hl.style.display = 'none';
   status.textContent = '\xa0';
-  canvas.title = '';
   canvas.style.cursor = '';
   canvas.onclick = '';
+  hideTooltip();
 }
 
 function samples(n, add_plus) {
