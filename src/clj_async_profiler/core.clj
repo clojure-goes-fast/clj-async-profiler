@@ -416,3 +416,26 @@
   [default-options-map]
   {:pre [(map? default-options-map)]}
   (reset! default-options default-options-map))
+
+(defn print-jvm-opt-for-startup-profiling
+  "Generate a JVM option string that can be used to profile a JVM application
+  completely from its start to finish. Prints further instructions to stdout.
+  Accepts the same options map as `start`."
+  [options]
+  (let [event (:event options :cpu)
+        agent-path (async-profiler-agent)
+        run-id (swap! next-run-id inc)
+        f (tmp-results-file (format "%02d-startup-%s" run-id (name event)) "txt")
+        cmd-string (make-command-string "start" (assoc options :file f))
+        full-opt (format "-agentpath:%s=%s" agent-path cmd-string)]
+    (println
+     (format "Add this as a JVM option for the Java process you want to profile.
+If you use Clojure CLI to launch, don't forget to add -J in the front:
+
+    %s
+
+Once the process finishes, go back to this REPL and execute this:
+
+    (clj-async-profiler.core/generate-flamegraph \"%s\" {})"
+             full-opt f))
+    full-opt))

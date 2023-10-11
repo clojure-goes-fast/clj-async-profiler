@@ -2,6 +2,9 @@
 
 ### master (unreleased)
 
+- Add `print-jvm-opt-for-startup-profiling` function to simplify setting up
+  startup profiling with async-profiler and then render the results with
+  clj-async-profiler.
 - [#28](https://github.com/clojure-goes-fast/clj-async-profiler/pull/28)
   Customize output dir via a Java property.
 

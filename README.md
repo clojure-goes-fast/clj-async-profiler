@@ -83,6 +83,7 @@ the documentation pages:
 
 - [Allocation profiling](http://clojure-goes-fast.com/kb/profiling/clj-async-profiler/allocation-profiling/)
 - [Differential flamegraphs](http://clojure-goes-fast.com/kb/profiling/clj-async-profiler/diffgraphs/)
+- [Startup profiling](http://clojure-goes-fast.com/kb/profiling/clj-async-profiler/startup/)
 - [Profiling in production](http://clojure-goes-fast.com/kb/profiling/clj-async-profiler/production/)
 
 Also check out this video from London Clojurians meetup:

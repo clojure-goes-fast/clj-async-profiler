@@ -28,3 +28,6 @@
 
   (sut/serve-files 8086)
   (is (= 200 (curl-ui 8086))))
+
+(deftest startup-opt-test
+  (is (re-matches #"-agentpath.+collapsed" (sut/print-jvm-opt-for-startup-profiling {}))))
