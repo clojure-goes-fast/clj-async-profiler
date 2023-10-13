@@ -5,6 +5,10 @@
 - Add `print-jvm-opt-for-startup-profiling` function to simplify setting up
   startup profiling with async-profiler and then render the results with
   clj-async-profiler.
+- Add right-click menu for frames to automatically generate common transforms.
+- A stack string during dynamic transforms now includes leading and trailing
+  semicolons (e.g. `;frame1;frame2;frame3;`) for easier matching of frame
+  boundaries.
 - [#28](https://github.com/clojure-goes-fast/clj-async-profiler/pull/28)
   Customize output dir via a Java property.
 

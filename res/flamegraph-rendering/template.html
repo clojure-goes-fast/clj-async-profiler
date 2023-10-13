@@ -24,13 +24,27 @@
       .sidebarToggle{font: 10px; width:10; padding:0;}
       .margins {margin: 5px 1px}
       .vmargins {margin: 0px 1px;}
+      .context {display: inline-block; position:fixed; top:0px; left:0px; min-width:200px;
+                color:#fff;  background:#262933; font-size:9pt; border:1px solid #333333;
+                border-radius:6px; box-shadow:2px 2px 2px -1px rgba(0, 0, 0, 0.5);
+                padding:3px 0px; -webkit-touch-callout:none; -webkit-user-select:none;
+                -khtml-user-select:none; -moz-user-select:none; -ms-user-select:none;
+                user-select:none; z-index:200;}
+      .context .item {padding:4px 19px; cursor:default; color:inherit;}
+      .context .item:hover { background:#2777FF;}
+      .context .item:hover .hotkey {color: #fff;}
+      .context .disabled {color:#878B90;}
+      .context .disabled:hover {background:inherit;}
+      .context .disabled:hover .hotkey {color: #878B90;}
+      .context .separator {margin:4px 0px; height:0; padding:0; border-top:1px solid #454545;}
+      .hotkey {color:#878B90; float:right;}
     </style>
   </head>
   <body style='font: 12px Verdana, sans-serif'>
     <div class="c">
       <div class="row">
         <div class="graphCol">
-          <canvas id='canvas' style='width: 100%;'></canvas>
+          <div id='canvasDiv'><canvas id='canvas' style='width: 100%;'></canvas></div>
           <div id='box'><div id='hl'><span></span></div></div>
           <p id='match'>Matched: <span id='matchedLabel'></span></p>
           <p id='status'>&nbsp;</p>
@@ -50,15 +64,7 @@
               <button onclick="highlightApply()">Highlight</button>
               <button onclick="highlightClear()">Clear</button>
             </div>
-            <hr>
             <br>
-            <div class="row">
-              <label>Copy selected frame to clipboard:</label><br>
-            </div>
-            <div class="row">
-              <button onclick="copySelectedFrameAsText()">As text</button>
-              <button onclick="copySelectedFrameAsRegex()">As regex</button>
-            </div>
             <hr>
             <br>
 
@@ -90,6 +96,7 @@
                 <button onclick="addNewTransform()">Add</button>
               </div>
             </div>
+            <p><i>Right-click any stackframe to add common transforms.</i></p>
             <br>
 
             <div id="transformsContainer">

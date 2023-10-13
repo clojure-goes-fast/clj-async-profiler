@@ -94,8 +94,9 @@ function _stringToMaybeRegex(s) {
 
 function _makeTransform(type, enabled, what, replacement) {
   let what2 = (typeof(what) == 'string') ? _stringToMaybeRegex(what) : what;
+  let what2Str = what2.toString();
   let prefix = (what2 instanceof RegExp) ?
-      _extractRegexPrefix(what2.toString()) : null;
+      _extractRegexPrefix(what2Str) : null;
   if (type == 'replace')
     return { type: type, enabled: enabled, what: what2, replacement: replacement, prefix: prefix}
   else
@@ -113,12 +114,21 @@ function match(string, obj) {
 
 function applyReplacement(string, what, replacement, prefix) {
   var s = string;
+  var prevMatch = null;
   if (prefix != null) {
-    let match = prefix.exec(string);
-    if (match == null)
-      return s;
-    else
-      s = string.substring(Math.max(match.index-1, 0));
+    while (true) {
+      let match = prefix.exec(string);
+      if (match == null) {
+        if (prevMatch == null)
+          return s;
+        else {
+          s = string.substring(Math.max(prevMatch.index, 0));
+          return s.replace(prefix, replacement);
+        }
+      } else {
+        prevMatch = match;
+      }
+    }
   }
   return s.replaceAll(what, replacement);
 }
@@ -438,7 +448,7 @@ else
   graphTitleSpan.innerText = graphTitle;
 
 
-var highlightPattern = null, currentRootFrame, currentRootLevel, px;
+var highlightPattern = null, currentRootFrame, currentRootLevel, currentFrameUnderCursor, currentLevelUnderCursor, px;
 
 function render(newRootFrame, newLevel) {
   console.time("render");
@@ -545,8 +555,10 @@ function findFrame(frames, x) {
 
 canvas.onmousemove = function() {
   const h = Math.floor((reverseGraph ? event.offsetY : (canvasHeight - event.offsetY)) / 16);
+  currentLevelUnderCursor = h;
   if (h >= 0 && h < levels.length) {
     const f = findFrame(levels[h], event.offsetX / px + currentRootFrame.left);
+    currentFrameUnderCursor = f;
     if (f && f.width >= minSamplesToShow) {
       hl.style.left = (Math.max(f.left - currentRootFrame.left, 0) * px + canvas.offsetLeft) + 'px';
       hl.style.width = (Math.min(f.width, currentRootFrame.width) * px) + 'px';
@@ -561,12 +573,6 @@ canvas.onmousemove = function() {
       } else
         canvas.title = f.title + '\n(' + samples(f.width) + ', ' + pct(f.width, levels[0][0].width) + '%)';
       canvas.style.cursor = 'pointer';
-      canvas.onclick = function() {
-        if (f != currentRootFrame) {
-          render(f, h);
-          canvas.onmousemove();
-        }
-      };
       status.textContent = 'Function: ' + canvas.title;
       status.style['max-width'] = (canvas.offsetWidth - 150) + 'px';
       return;
@@ -575,12 +581,20 @@ canvas.onmousemove = function() {
   canvas.onmouseout();
 }
 
+canvas.onclick = function () {
+  if (currentFrameUnderCursor && currentFrameUnderCursor != currentRootFrame) {
+    render(currentFrameUnderCursor, currentLevelUnderCursor);
+    canvas.onmousemove();
+  }
+}
+
 canvas.onmouseout = function() {
   hl.style.display = 'none';
   status.textContent = '\xa0';
   canvas.title = '';
   canvas.style.cursor = '';
-  canvas.onclick = '';
+  currentLevelUnderCursor = -1;
+  currentFrameUnderCursor = null;
 }
 
 function samples(n, add_plus) {
@@ -604,26 +618,20 @@ function highlightClear() {
   render(currentRootFrame, currentRootLevel);
 }
 
-function copySelectedFrameAsText() {
-  navigator.clipboard.writeText(currentRootFrame.title);
-}
-
-function copySelectedFrameAsRegex() {
-  let rx = currentRootFrame.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  navigator.clipboard.writeText(rx);
-}
-
 function userTransformsSwap(idx1, idx2) {
   const swap = userTransforms[idx1];
   userTransforms[idx1] = userTransforms[idx2];
   userTransforms[idx2] = swap;
 }
 
-function addNewTransform() {
+function addNewTransformParameterized(type, what, replacement) {
   syncTransformsModelWithUI();
-  let type = newTransformType.value;
-  userTransforms.push(_makeTransform(type, true, "", ""));
+  userTransforms.push(_makeTransform(type, true, what, replacement));
   redrawTransformsSection();
+}
+
+function addNewTransform() {
+  addNewTransformParameterized(newTransformType.value, "", "");
 }
 
 function deleteTransform(originator) {
@@ -734,3 +742,175 @@ function toggleSidebarVisibility() {
   updateSidebarState();
   applyConfiguration();
 }
+
+
+// Context menu implementation was taken from https://github.com/heapoverride/context-js
+// and modified to suit our needs. Licensed Under MIT License, author: @UnrealSec
+class ContextMenu {
+  constructor(container, items) {
+    this.container = container;
+    this.dom = null;
+    this.shown = false;
+    this.root = true;
+    this.items = items;
+    this._onclick = e => {
+      if (this.dom && e.target != this.dom &&
+          e.target.parentElement != this.dom &&
+          !e.target.classList.contains('item') &&
+          !e.target.parentElement.classList.contains('item')) {
+        this.hide();
+      }
+    };
+    this._oncontextmenu = e => {
+      if (e.target != this.dom &&
+          e.target.parentElement != this.dom &&
+          !e.target.classList.contains('item') &&
+          !e.target.parentElement.classList.contains('item') &&
+          currentFrameUnderCursor) {
+        e.preventDefault();
+        this.hide();
+        this.frame = currentFrameUnderCursor;
+        this.show(e.clientX, e.clientY);
+      }
+    };
+    this._onblur = e => { this.hide(); };
+  }
+  getMenuDom() {
+    const menu = document.createElement('div');
+    menu.classList.add('context');
+    for (const item of this.items)
+      menu.appendChild(this.itemToDomEl(item));
+    return menu;
+  }
+  itemToDomEl(data) {
+    const item = document.createElement('div');
+    if (data === null) {
+      item.classList = 'separator';
+      return item;
+    }
+    if (data.hasOwnProperty('color') && /^#([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(data.color.toString())) {
+      item.style.cssText = `color: ${data.color}`;
+    }
+    item.classList.add('item');
+
+    const label = document.createElement('span');
+    label.classList = 'label';
+    label.innerText = data.hasOwnProperty('text') ? data['text'].toString() : '';
+    item.appendChild(label);
+
+    if (data.hasOwnProperty('disabled') && data['disabled'])
+      item.classList.add('disabled');
+    else
+      item.classList.add('enabled');
+
+    item.addEventListener('click', e => {
+      if (item.classList.contains('disabled')) return;
+      if (data.hasOwnProperty('onclick') && typeof data['onclick'] === 'function') {
+        const event = {handled: false, item: item, label: label, items: this.items, data: data};
+        data['onclick'](event, this.frame);
+        if (!event.handled)
+          this.hide();
+      } else {
+        this.hide();
+      }
+    });
+    return item;
+  }
+  hide() {
+    if (this.dom && this.shown) {
+      this.shown = false;
+      this.container.removeChild(this.dom);
+    }
+  }
+  show(x, y) {
+    this.dom = this.getMenuDom();
+    this.dom.style.visibility = 'hidden';
+    this.dom.style.left = `${x}px`;
+    this.dom.style.top = `${y}px`;
+    this.shown = true;
+    this.container.appendChild(this.dom);
+
+    if (this.dom.offsetWidth + x > document.body.clientWidth)
+      this.dom.style.left = `${x-this.dom.offsetWidth}px`;
+    if (this.dom.offsetHeight + y > document.body.clientHeight)
+      this.dom.style.top = `${y-this.dom.offsetHeight}px`;
+    this.dom.style.visibility = 'visible';
+  }
+
+  install() {
+    this.container.addEventListener('contextmenu', this._oncontextmenu, false);
+    this.container.addEventListener('keydown', this._oncontextmenu_keydown);
+    this.container.addEventListener('click', this._onclick);
+    window.addEventListener('blur', this._onblur);
+  }
+}
+
+function escapeRegex(regexString) {
+  return regexString.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function menuHighlight(e, frame) {
+  let rx = escapeRegex(frame.title);
+  highlightInput.value = "/^" + rx + "$/";
+  highlightApply();
+}
+
+function menuCopyAsText(e, frame) {
+  navigator.clipboard.writeText(frame.title);
+}
+
+function menuCopyAsRegex(e, frame) {
+  let rx = escapeRegex(frame.title);
+  navigator.clipboard.writeText(rx);
+}
+
+function menuFilterContaining(e, frame) {
+  addNewTransformParameterized('filter', ";" + frame.title + ";", "");
+  applyConfiguration();
+}
+
+function menuRemoveContaining(e, frame) {
+  addNewTransformParameterized('remove', ";" + frame.title + ";", "");
+  applyConfiguration();
+}
+
+function menuHideFramesAbove(e, frame) {
+  let rx = escapeRegex(frame.title);
+  addNewTransformParameterized('replace', "/(;" + rx + ";).*/", "$1");
+  applyConfiguration();
+}
+
+function menuHideFramesBelow(e, frame) {
+  let rx = escapeRegex(frame.title);
+  addNewTransformParameterized('replace', "/.+(" + rx + ";)/", ";$1");
+  applyConfiguration();
+}
+
+function menuCollapseRecursive(e, frame) {
+  let rx = escapeRegex(frame.title);
+  addNewTransformParameterized('replace', "/;(" + rx + ";)+/", ";$1");
+  applyConfiguration();
+}
+
+function menuCollapseRecursiveWithGaps(e, frame) {
+  let rx = escapeRegex(frame.title);
+  addNewTransformParameterized('replace', "/;(" + rx + ";).*\\1/", ";$1");
+  applyConfiguration();
+}
+
+const ctxMenuData = [
+  {text: 'Highlight', onclick: menuHighlight },
+  {text: 'Copy as text', onclick: menuCopyAsText },
+  {text: 'Copy as regex', onclick: menuCopyAsRegex },
+  null,
+  {text: 'Filter containing stacks', onclick: menuFilterContaining },
+  {text: 'Remove containing stacks', onclick: menuRemoveContaining },
+  {text: 'Hide frames above', onclick: menuHideFramesAbove },
+  {text: 'Hide frames below', onclick: menuHideFramesBelow },
+  null,
+  {text: 'Collapse recursive', onclick: menuCollapseRecursive },
+  {text: 'Collapse recursive (with gaps)', onclick: menuCollapseRecursiveWithGaps},
+];
+
+const ctxMenu = new ContextMenu(document.getElementById('canvasDiv'), ctxMenuData);
+ctxMenu.install();
