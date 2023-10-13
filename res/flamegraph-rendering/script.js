@@ -131,7 +131,7 @@ function transformStacks() {
     var xformedMap = {};
     for (var i = 0; i < initialStacks.length; i++) {
       var stack = initialStacks[i];
-      var xformedStr = stack.stackStr;
+      var xformedStr = ";" + stack.stackStr + ";";
       var useIt = true;
 
       for (var t = 0; t < userTransforms.length; t++) {
@@ -150,6 +150,8 @@ function transformStacks() {
         }
         if (!useIt) break;
       }
+
+      xformedStr = xformedStr.substring(1,xformedStr.length-1);
 
       if (useIt)
         if (diff) {
@@ -566,6 +568,7 @@ canvas.onmousemove = function() {
         }
       };
       status.textContent = 'Function: ' + canvas.title;
+      status.style['max-width'] = (canvas.offsetWidth - 150) + 'px';
       return;
     }
   }
