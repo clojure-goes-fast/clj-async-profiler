@@ -8,7 +8,7 @@
 (defmacro opts+ []
   `(let [url# "https://github.com/clojure-goes-fast/clj-async-profiler"]
      (-> {:lib 'com.clojure-goes-fast/clj-async-profiler
-          :version "1.1.0-SNAPSHOT"
+          :version "1.1.0"
           :resource-dirs ["res" "vendor"]
           :scm {:url url#}
           :pom-data [[:description "Embedded high-precision Clojure profiler (based on async-profiler)"]

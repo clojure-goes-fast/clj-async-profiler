@@ -1,6 +1,6 @@
 # Changelog
 
-### master (unreleased)
+### 1.1.0 (2023-10-16)
 
 - Add `print-jvm-opt-for-startup-profiling` function to simplify setting up
   startup profiling with async-profiler and then render the results with
