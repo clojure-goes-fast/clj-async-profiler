@@ -6,9 +6,11 @@
             [org.corfield.build :as bb]))
 
 (defmacro opts+ []
-  `(let [url# "https://github.com/clojure-goes-fast/clj-async-profiler"]
+  `(let [url# "https://github.com/clojure-goes-fast/clj-async-profiler"
+         version# "1.1.2-SNAPSHOT"]
      (-> {:lib 'com.clojure-goes-fast/clj-async-profiler
-          :version "1.1.1"
+          :version version#
+          :tag version#
           :resource-dirs ["res" "vendor"]
           :scm {:url url#}
           :pom-data [[:description "Embedded high-precision Clojure profiler (based on async-profiler)"]
