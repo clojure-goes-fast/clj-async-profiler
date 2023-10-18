@@ -79,7 +79,7 @@ function d(frameIds, samples_a, samples_b) {
 function _extractRegexPrefix(s) {
   let parsed = s.match(/^\/\.\+(.+)\/g$/);
   if (parsed != null) {
-    return new RegExp(parsed[1]);
+    return new RegExp(parsed[1], 'g');
   }
 }
 
