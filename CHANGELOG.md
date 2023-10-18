@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.1.1 (2023-10-18)
+
+- Fix "Hide frames below" transform being stuck in an endless loop.
+
 ### 1.1.0 (2023-10-16)
 
 - Add `print-jvm-opt-for-startup-profiling` to simplify setting up startup
