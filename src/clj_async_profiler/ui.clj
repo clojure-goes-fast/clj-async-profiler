@@ -106,5 +106,7 @@ a { text-decoration: none; }
   "Starts the profiler web UI with the local directory `dir` as its root."
   [host port dir]
   (stop-server)
-  (println "Starting server on port" port)
-  (reset! current-server (wwws/start-server #(handler % dir) host port)))
+  (let [server (reset! current-server
+                       (wwws/start-server #(handler % dir) host port))]
+    (println "Started server on port" (wwws/get-port server))
+    server))

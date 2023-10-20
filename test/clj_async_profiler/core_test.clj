@@ -1,5 +1,6 @@
 (ns clj-async-profiler.core-test
   (:require [clj-async-profiler.core :as sut]
+            [clj-async-profiler.wwws :as wwws]
             [clojure.test :refer :all])
   (:import java.net.URL))
 
@@ -25,6 +26,9 @@
 (deftest web-ui-test
   (sut/serve-ui 8085)
   (is (= 200 (curl-ui 8085)))
+
+  (let [port (wwws/get-port (sut/serve-ui 0))]
+    (is (= 200 (curl-ui port))))
 
   (sut/serve-files 8086)
   (is (= 200 (curl-ui 8086))))
