@@ -106,11 +106,6 @@
 (defn- aarch64? []
   (re-find #"(?i)aarch64" (System/getProperty "os.arch")))
 
-(defn- musl? []
-  (try (some #(.contains (.getCanonicalPath ^java.io.File %) "musl")
-             (.listFiles (java.io.File. "/proc/self/map_files")))
-       (catch Exception _ false)))
-
 (defn- unpack-from-jar [resource-name]
   (let [path (io/file temp-directory resource-name)]
     (when-not (.exists path)
@@ -123,7 +118,6 @@
   (delay
     (let [lib (cond (macos?)   "libasyncProfiler-darwin-universal.so"
                     (aarch64?) "libasyncProfiler-linux-aarch64.so"
-                    (musl?)    "libasyncProfiler-linux-musl-x64.so"
                     :else      "libasyncProfiler-linux-x64.so")]
       (dbg-println "Inferred native library:" lib)
       (unpack-from-jar lib))))

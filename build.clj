@@ -7,7 +7,7 @@
 
 (defmacro opts+ []
   `(let [url# "https://github.com/clojure-goes-fast/clj-async-profiler"
-         version# "1.1.2-SNAPSHOT"]
+         version# "1.2.0-SNAPSHOT"]
      (-> {:lib 'com.clojure-goes-fast/clj-async-profiler
           :version version#
           :tag version#
