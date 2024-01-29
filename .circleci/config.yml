@@ -37,8 +37,8 @@ workflows:
           matrix:
             parameters:
               docker-image:
-                - clojure:openjdk-8-bullseye
-                - clojure:openjdk-11-bullseye
+                - clojure:temurin-8-jammy
+                - clojure:temurin-11-jammy
                 - clojure:temurin-17-jammy
                 - clojure:temurin-21-jammy
               clj-version: ["1.10", "1.11", "1.12"]
