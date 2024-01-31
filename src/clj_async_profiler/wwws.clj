@@ -85,6 +85,9 @@
     (.setExecutor nil)
     (.start)))
 
+(defn get-address [^HttpServer server]
+  (some-> server .getAddress str))
+
 (defn get-port [^HttpServer server]
   (some-> server .getAddress .getPort))
 

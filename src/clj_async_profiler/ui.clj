@@ -108,5 +108,5 @@ a { text-decoration: none; }
   (stop-server)
   (let [server (reset! current-server
                        (wwws/start-server #(handler % dir) host port))]
-    (println "Started server on port" (wwws/get-port server))
+    (println "[clj-async-profiler.ui] Started server at" (wwws/get-address server))
     server))
