@@ -1,5 +1,14 @@
 # Changelog
 
+### master (unreleased)
+
+- Update vendored async-profiler libraries to
+  [3.0](https://github.com/jvm-profiling-tools/async-profiler/releases/tag/v3.0).
+- Remove dedicated musl binary and special handling for musl-based distros
+  (Linux x64 now handles both glibc and musl).
+- Add support for optional async-profiler features (currently supported:
+  `:vtable` and `:comptask`).
+
 ### 1.1.1 (2023-10-18)
 
 - Fix "Hide frames below" transform being stuck in an endless loop.

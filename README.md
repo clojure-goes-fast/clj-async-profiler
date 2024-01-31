@@ -92,11 +92,12 @@ Also check out this video from London Clojurians meetup:
 
 ### Output directory
 
-To not store the potentially large output files in `/tmp`, you can instead set a custom directory using the Java property `clj-async-profiler.output-dir`:
+By default, clj-async-profiler writes its output files to
+`/tmp/clj-async-profiler/`. You can change it to a custom directory (e.g., if
+you run clj-async-profiler in an environment where `/tmp` is not sufficiently
+large) by setting Java property `clj-async-profiler.output-dir`:
 
-`-Dclj-async-profiler.output-dir=./data`
-
-This is helpful in some cases where the boot drive is kept intentionally small, and you mount large external disks for primary use (like Fly.io).
+`clojure -J-Dclj-async-profiler.output-dir=./data ...`
 
 ### Tuning for better accuracy
 
@@ -161,11 +162,11 @@ repository
 is
 [https://github.com/jvm-profiling-tools/async-profiler](https://github.com/jvm-profiling-tools/async-profiler).
 
-Copyright 2017-2023 Andrei Pangin
+Copyright 2017-2024 Andrei Pangin
 
 ---
 
 clj-async-profiler is distributed under the Eclipse Public License.
 See [ECLIPSE_PUBLIC_LICENSE](docs/ECLIPSE_PUBLIC_LICENSE).
 
-Copyright 2017-2023 Alexander Yakushev
+Copyright 2017-2024 Alexander Yakushev
