@@ -8,7 +8,7 @@
   ;; Check if agent can attach at all.
   (sut/list-event-types)
   ;; Try profiling a little bit and verify that a file is created.
-  (sut/start {:event :itimer})
+  (sut/start {:event :itimer, :features [:vtable :comptask]})
   (reduce *' (range 1 100000))
   (let [stacks-file (sut/stop {:generate-flamegraph? false})]
     (is (.exists stacks-file))
@@ -34,4 +34,4 @@
   (is (= 200 (curl-ui 8086))))
 
 (deftest startup-opt-test
-  (is (re-matches #"-agentpath.+collapsed" (sut/print-jvm-opt-for-startup-profiling {}))))
+  (is (re-matches #"-agentpath.+collapsed" (sut/print-jvm-opt-for-startup-profiling {:features [:vtable :comptask]}))))

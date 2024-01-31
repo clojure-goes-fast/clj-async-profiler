@@ -173,13 +173,16 @@
   (get-self-pid*))
 
 (defn- make-command-string
-  [command {:keys [file event interval framebuf threads]
+  [command {:keys [file event interval framebuf threads features]
             :or {event :cpu, interval 1000000}}]
   (case command
     "list" (format "%s,file=%s" command file)
     "status" (format "%s,file=%s" command file)
-    "start" (format "%s,event=%s,file=%s,interval=%s,%s%scollapsed"
+    "start" (format "%s,event=%s,file=%s,interval=%s,%s%s%scollapsed"
                     command (name event) file interval
+                    (if (seq features)
+                      (str "features=" (str/join "+" (map name features)) ",")
+                      "")
                     (if framebuf (str "framebuf=" framebuf ",") "")
                     (if threads "threads," ""))
     "stop" (format "%s,file=%s,collapsed" command file)))
@@ -254,6 +257,9 @@
   :interval - sampling interval in nanoseconds (default: 1000000 - 1ms)
   :framebuf - size of the buffer for stack frames (default: 1000000 - 1MB)
   :threads - profile each thread separately
+  :features - a list of extra features to enable. Supported features:
+    `:vtable` - show targets of vtable/itable calls
+    `:comptask` - show JIT compilation task
   :event - event to profile, see `list-event-types` (default: :cpu)"
   ([] (start {}))
   ([options]
