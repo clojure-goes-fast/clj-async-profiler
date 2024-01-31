@@ -389,16 +389,6 @@
 
 #_(serve-ui 8080)
 
-(defn ^{:deprecated "1.0.1"} serve-files
-  "DEPRECATED: use `serve-ui` instead.
-
-  For backward compatibility, this function starts a webserver on hostname
-  `0.0.0.0`. This is not recommended for security reasons, instead use
-  `localhost` when launched locally, and a proper internal network IP in
-  production."
-  [port]
-  (serve-ui "0.0.0.0" port))
-
 (defn clear-results
   "Clear all results from /tmp/clj-async-profiler directory."
   []

@@ -30,7 +30,7 @@
   (let [port (wwws/get-port (sut/serve-ui 0))]
     (is (= 200 (curl-ui port))))
 
-  (sut/serve-files 8086)
+  (sut/serve-ui 8086)
   (is (= 200 (curl-ui 8086))))
 
 (deftest startup-opt-test

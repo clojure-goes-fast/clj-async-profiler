@@ -8,6 +8,8 @@
   (Linux x64 now handles both glibc and musl).
 - Add support for optional async-profiler features (currently supported:
   `:vtable` and `:comptask`).
+- **BREAKING:** Remove `serve-files` which has been deprecated since version
+  1.0.1. Use `serve-ui` instead.
 
 ### 1.1.1 (2023-10-18)
 
