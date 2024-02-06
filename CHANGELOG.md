@@ -1,6 +1,6 @@
 # Changelog
 
-### master (unreleased)
+### 1.2.0 (2024-02-06)
 
 - Update vendored async-profiler libraries to
   [3.0](https://github.com/jvm-profiling-tools/async-profiler/releases/tag/v3.0).
@@ -8,6 +8,9 @@
   (Linux x64 now handles both glibc and musl).
 - Add support for optional async-profiler features (currently supported:
   `:vtable` and `:comptask`).
+- Add support for new event type `:ctimer` which doesn't require perf_events (so
+  it works in limited permission containers) but is more accurate than
+  `:itimer`. Note that `:ctimer` is only supported on Linux.
 - **BREAKING:** Remove `serve-files` which has been deprecated since version
   1.0.1. Use `serve-ui` instead.
 
