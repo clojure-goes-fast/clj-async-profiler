@@ -41,6 +41,7 @@ workflows:
                 - clojure:temurin-11-jammy
                 - clojure:temurin-17-jammy
                 - clojure:temurin-21-jammy
+                - clojure:temurin-22-jammy
               clj-version: ["1.10", "1.11", "1.12"]
       - test:
           name: test-alpine
