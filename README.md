@@ -121,7 +121,7 @@ async-profiler itself
 [distributes](https://github.com/jvm-profiling-tools/async-profiler#download).
 These include:
 
-- **Linux**: x64, x64 with musl libc (Alpine), aarch64 (arm64)
+- **Linux**: x64, aarch64 (arm64)
 - **MacOS**: x64/aarch64 (universal binary)
 
 To use clj-async-profiler on other [supported
@@ -136,8 +136,7 @@ you should do the following:
 3. Execute from Clojure:
 
    ```clj
-   (reset! clj-async-profiler.core/async-profiler-agent-path
-           "/path/to/libasyncProfiler.so")
+   (reset! prof/async-profiler-agent-path "/path/to/libasyncProfiler.so")
    ```
 
 ## Development

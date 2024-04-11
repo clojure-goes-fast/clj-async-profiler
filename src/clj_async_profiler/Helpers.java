@@ -1,7 +1,7 @@
 package clj_async_profiler;
 
 import java.util.*;
-import static clojure.lang.Compiler.demunge;
+import clojure.lang.Compiler;
 
 public class Helpers {
 
@@ -50,12 +50,9 @@ public class Helpers {
                     String frame = s.substring(frameBeg, dot);
                     String newFrame = frame.replace('/', '.');
                     if (frameHasSpecialChar(newFrame)) {
-                        if (demungeCache != null) {
-                            final String nframe = newFrame;
-                            newFrame = demungeCache.computeIfAbsent
-                                (nframe, (k) -> clojure.lang.Compiler.demunge(nframe));
-                        } else
-                            newFrame = clojure.lang.Compiler.demunge(newFrame);
+                        newFrame = (demungeCache != null) ?
+                            demungeCache.computeIfAbsent(newFrame, Compiler::demunge) :
+                            Compiler.demunge(newFrame);
                     } else {
                         newFrame = newFrame.replace('_', '-').replace('$', '/');
                     }
@@ -66,9 +63,9 @@ public class Helpers {
                     int frameLen = frame.length();
                     int nextFrameNameEnd = frameEnd + 1 + frameLen;
                     if (s.regionMatches(frameEnd+1, frame, 0, frameLen)) {
-                        if (s.regionMatches(nextFrameNameEnd, ".invokeStatic", 0, 13)) {
+                        if (s.regionMatches(nextFrameNameEnd, ".invokeStatic", 0, 13))
                             frameBeg = nextFrameNameEnd + 13 + 1;
-                        } else if (s.regionMatches(nextFrameNameEnd, ".invokePrim", 0, 11))
+                        else if (s.regionMatches(nextFrameNameEnd, ".invokePrim", 0, 11))
                             frameBeg = nextFrameNameEnd + 11 + 1;
                         else
                             frameBeg = frameEnd + 1;
