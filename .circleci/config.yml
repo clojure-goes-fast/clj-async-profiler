@@ -7,13 +7,14 @@ jobs:
         type: string
       clj-version:
         type: string
-        default: "1.11"
       is-alpine:
         type: boolean
         default: false
     working_directory: ~/project
     docker:
       - image: << parameters.docker-image >>
+    environment:
+      CLOJURE_VERSION: << parameters.clj-version >>
     steps:
       - checkout
       - restore_cache:
@@ -23,11 +24,11 @@ jobs:
           steps:
             - run: apk add --no-cache libstdc++
       - run: >-
-           clojure -T:build test :clj :<< parameters.clj-version >>
-           :jvm-opts '["-Dclj-async-profiler.debug"]'
+           clojure -T:build javac && clojure -X:test:$CLOJURE_VERSION
       - save_cache:
           paths:
             - ~/.m2
+            - ~/.gitlibs
           key: project-{{ checksum "deps.edn" }}
 
 workflows:
@@ -44,6 +45,10 @@ workflows:
                 - clojure:temurin-22-jammy
               clj-version: ["1.10", "1.11", "1.12"]
       - test:
-          name: test-alpine
-          docker-image: clojure:temurin-8-alpine
-          is-alpine: true
+          matrix:
+            parameters:
+              docker-image:
+                - clojure:temurin-8-alpine
+                - clojure:temurin-21-alpine
+              clj-version: ["1.10", "1.11", "1.12"]
+              is-alpine: [true]
