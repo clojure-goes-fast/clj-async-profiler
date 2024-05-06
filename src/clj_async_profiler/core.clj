@@ -2,11 +2,8 @@
   (:require [clj-async-profiler.post-processing :as post-proc]
             [clj-async-profiler.render :as render]
             [clojure.java.io :as io]
-            [clojure.java.shell :as sh]
             [clojure.string :as str])
-  (:import java.lang.management.ManagementFactory
-           java.io.File
-           java.net.URLClassLoader
+  (:import java.io.File
            java.text.SimpleDateFormat
            java.util.Date))
 
@@ -35,66 +32,6 @@
 (defn- tmp-results-file [prefix extension]
   (io/file temp-directory "results"
            (format "%s-%s.%s" prefix (.format date-format (Date.)) extension)))
-
-;;; Dynamic attach initialization
-
-(defn- tools-jar-url []
-  (let [^File file (io/file (System/getProperty "java.home"))
-        file (if (.equalsIgnoreCase (.getName file) "jre")
-               (.getParentFile file)
-               file)
-        file (io/file file "lib" "tools.jar")]
-    (io/as-url file)))
-
-(defn- add-url-to-classloader-reflective
-  "This is needed for cases when there is no DynamicClassLoader in the classloader
-  chain (i.e., the env is not a REPL)."
-  [^URLClassLoader loader, url]
-  (doto (.getDeclaredMethod URLClassLoader "addURL" (into-array Class [java.net.URL]))
-    (.setAccessible true)
-    (.invoke loader (object-array [url]))))
-
-(defn- get-classloader
-  "Find the uppermost DynamicClassLoader in the chain. However, if the immediate
-  context classloader is not a DynamicClassLoader, it means we are not run in
-  the REPL environment, and have to use reflection to patch this classloader.
-
-  Return a tuple of [classloader is-it-dynamic?]."
-  []
-  (let [dynamic-cl?
-        #(#{"clojure.lang.DynamicClassLoader" "boot.AddableClassLoader"}
-          (.getName (class %)))
-
-        ctx-loader (.getContextClassLoader (Thread/currentThread))]
-    (if (dynamic-cl? ctx-loader)
-      ;; The chain starts with a dynamic classloader, walk the chain up to find
-      ;; the uppermost one.
-      (loop [loader ctx-loader]
-        (let [parent (.getParent loader)]
-          (if (dynamic-cl? parent)
-            (recur parent)
-            [loader true])))
-
-      ;; Otherwise, return the immediate classloader and tell it's not dynamic.
-      [ctx-loader false])))
-
-(def ^:private tools-jar-classloader
-  (delay
-   (let [tools-jar (tools-jar-url)
-         [loader dynamic?] (get-classloader)]
-     (dbg-println "Top level dynamic classloader:" loader)
-     (if dynamic?
-       (.addURL ^clojure.lang.DynamicClassLoader loader tools-jar)
-       (add-url-to-classloader-reflective loader tools-jar))
-     loader)))
-
-(defn- ^Class get-virtualmachine-class []
-  ;; In JDK9+, the class is already present, no extra steps required.
-  (or (try (resolve 'com.sun.tools.attach.VirtualMachine)
-           (catch ClassNotFoundException _))
-      ;; In earlier JDKs, load tools.jar and get the class from there.
-      (Class/forName "com.sun.tools.attach.VirtualMachine"
-                     false @tools-jar-classloader)))
 
 ;;; Agent unpacking
 
@@ -128,6 +65,11 @@
   []
   (or @async-profiler-agent-path @inferred-agent-path))
 
+;;; Dynamic attach initialization
+
+(load (if (resolve 'java.lang.ProcessHandle)
+        "util/jdk11" "util/jdk8"))
+
 ;;; Profiling
 
 ;; Used to assign sequential IDs to profiler runs, so that just the ID instead
@@ -148,30 +90,6 @@
         (throw (ex-info (str "File " f " does not exist.") {})))
       {:id (if id (Integer/parseInt id) -1), :stacks-file f, :event (keyword (or event :cpu))})))
 
-(defmacro ^:private get-self-pid*
-  "This macro expands into proper way of obtaining self PID on JDK9+, and digs
-  into internals on JDK8."
-  []
-  (if (and (try (resolve 'java.lang.ProcessHandle)
-                (catch ClassNotFoundException _))
-           ;; (java.lang.ProcessHandle/current) doesn't work before 1.10.0
-           ;; because of a Clojure bug.
-           (>= (compare (mapv *clojure-version* [:major :minor]) [1 10]) 0))
-    `(.pid (java.lang.ProcessHandle/current))
-    `(let [runtime# (ManagementFactory/getRuntimeMXBean)
-           jvm# (.get (doto (.getDeclaredField (class runtime#) "jvm")
-                        (.setAccessible true))
-                      runtime#)]
-       (.invoke (doto (.getDeclaredMethod (class jvm#) "getProcessId"
-                                          (into-array Class []))
-                  (.setAccessible true))
-                jvm# (object-array [])))))
-
-(defn get-self-pid
-  "Returns the process ID of the current JVM process."
-  []
-  (get-self-pid*))
-
 (defn- make-command-string
   [command {:keys [file event interval framebuf threads features]
             :or {event :cpu, interval 1000000}}]
@@ -189,35 +107,17 @@
 
 (defonce ^:private virtual-machines (atom {}))
 
-(defn- mk-vm [pid]
-  (let [vm-class (get-virtualmachine-class)
-        method (.getDeclaredMethod vm-class "attach" (into-array Class [String]))]
-    (.invoke method nil (object-array [pid]))))
-
-(defmacro ^:private load-agent-path
-  "Call `VirtualMachine.loadAgentPath` with the given command. This macro expands
-  to either reflective or non-reflective call, depending whether VirtualMachine
-  class is available at compile time (on JDK9+)."
-  [vm agent-so command-string]
-  (let [vm-sym (if (try (resolve 'com.sun.tools.attach.VirtualMachine)
-                        (catch ClassNotFoundException _))
-                 (with-meta vm {:tag 'com.sun.tools.attach.VirtualMachine})
-                 vm)]
-    `(.loadAgentPath ~vm-sym ~agent-so ~command-string)))
-
 (defn attach-agent [pid command-string]
   (let [pid (str pid)
         vm (or (@virtual-machines pid)
-               (let [new-vm (mk-vm pid)]
-                 (swap! virtual-machines assoc pid new-vm)
-                 new-vm))
+               (get (swap! virtual-machines assoc pid (vm-attach pid)) pid))
         agent-so (async-profiler-agent)]
     (try (load-agent-path vm agent-so command-string)
          (catch Exception ex
            ;; If agent failed to load, try to load the library with System/load
            ;; which hopefully throws a more informative exception.
            (System/load agent-so)
-           ;; But if it didn't throw the original one.
+           ;; But if it didn't, then throw the original one.
            (throw ex)))))
 
 (defn list-event-types
