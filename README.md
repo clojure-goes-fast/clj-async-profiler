@@ -26,13 +26,20 @@ that is used by clj-async-profiler is
 
 ## Usage
 
-_Comprehensive usage guide and in-depth documentation are available at [Clojure
+> [!TIP]
+> Comprehensive usage guide and in-depth documentation are available at [Clojure
 Goes Fast knowledge
-base](http://clojure-goes-fast.com/kb/profiling/clj-async-profiler/)._
+base](http://clojure-goes-fast.com/kb/profiling/clj-async-profiler/).
 
-clj-async-profiler is only supported on GNU/Linux and MacOS. On Linux, you need
-to allow async-profiler to use kernel profiling data by setting these two
-variables ([see
+clj-async-profiler has the following requirements:
+
+- Linux or MacOS
+- JDK 1.8+. Note that clj-async-profiler requires **JDK**, it won't run on
+  [JRE](https://www.digitalocean.com/community/tutorials/difference-jdk-vs-jre-vs-jvm).
+- Clojure 1.10+
+
+On Linux, you need to allow async-profiler to use kernel profiling data by
+setting these two variables ([see
 also](https://github.com/jvm-profiling-tools/async-profiler#basic-usage)):
 
 ```
@@ -45,12 +52,14 @@ is the latest version:
 
 [![](https://clojars.org/com.clojure-goes-fast/clj-async-profiler/latest-version.svg)](https://clojars.org/com.clojure-goes-fast/clj-async-profiler)
 
-**JDK11+:** you must start your application with JVM option
+On **JDK 11** and later, you must start your application with JVM option
 `-Djdk.attach.allowAttachSelf`, otherwise the profiling agent will not be able
-to dynamically attach to the running process. For Leiningen, add `:jvm-opts
-["-Djdk.attach.allowAttachSelf"]` to `project.clj`. For tools.deps, add the same
-`:jvm-opts` to `deps.edn` or write `-J-Djdk.attach.allowAttachSelf` explicitly
-in your REPL command.
+to dynamically attach to the running process.
+
+- With tools.deps, add `:jvm-opts ["-Djdk.attach.allowAttachSelf"]` to an alias
+in `deps.edn` and enable that alias, or add `-J-Djdk.attach.allowAttachSelf`
+explicitly to your REPL command.
+- With Leiningen, add `:jvm-opts ["-Djdk.attach.allowAttachSelf"]` to `project.clj`.
 
 `clj-async-profiler.core` exposes an all-in-one facade for generating profiling
 flame graphs. The most common usage scenario looks like this:
@@ -90,15 +99,6 @@ Also check out this video from London Clojurians meetup:
 
 [![Clojure Goes Brrr: a quest for performance](http://img.youtube.com/vi/s3mjVAMNVrA/0.jpg)](http://www.youtube.com/watch?v=s3mjVAMNVrA "Clojure Goes Brrr: a quest for performance")
 
-### Output directory
-
-By default, clj-async-profiler writes its output files to
-`/tmp/clj-async-profiler/`. You can change it to a custom directory (e.g., if
-you run clj-async-profiler in an environment where `/tmp` is not sufficiently
-large) by setting Java property `clj-async-profiler.output-dir`:
-
-`clojure -J-Dclj-async-profiler.output-dir=./data ...`
-
 ### Tuning for better accuracy
 
 From [async-profiler
@@ -110,9 +110,18 @@ is a high chance that simple inlined methods will not appear in the profile.
 When agent is attached at runtime, CompiledMethodLoad JVMTI event enables debug
 info, but only for methods compiled after the event is turned on.
 
-If you see stackframes like `/usr/lib/.../libjvm.so`, it means that you have to
-install JDK debug symbols. E.g., on Ubuntu that would be the package
-`openjdk-11-dbg`.
+If you see stackframes like `/usr/lib/.../libjvm.so` in the flamegraph, it means
+that you have to install JDK debug symbols. E.g., on Ubuntu that would be the
+package `openjdk-11-dbg`.
+
+### Output directory
+
+By default, clj-async-profiler writes its output files to
+`/tmp/clj-async-profiler/`. You can change it to a custom directory (e.g., if
+you run clj-async-profiler in an environment where `/tmp` is not sufficiently
+large) by setting Java property `clj-async-profiler.output-dir`:
+
+`clojure -J-Dclj-async-profiler.output-dir=./data ...`
 
 ## Platform support
 
