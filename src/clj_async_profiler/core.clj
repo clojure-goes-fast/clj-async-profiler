@@ -176,8 +176,8 @@
        (throw (ex-info msg {}))))))
 
 (defn generate-flamegraph
-  "Generate a flamegraph HTML file from a collapsed stacks file, identified either
-  by its filename, or numerical ID. For available options, see `stop`."
+  "Generate flamegraph from a collapsed stacks file, identified either by its file
+  path or numerical ID. For available options, see `stop`."
   [run-id-or-stacks-file options]
   (let [options (merge @default-options options)
         {:keys [id stacks-file event]} (find-profile run-id-or-stacks-file)
@@ -191,8 +191,8 @@
     flamegraph-file))
 
 (defn generate-diffgraph
-  "Generate a diff flamegraph SVG file from two profiles, identified by their IDs
-  or filenames. For rendering-related options, see `stop`."
+  "Generate a diff flamegraph from two profiles, identified either by their file
+  paths or IDs. For available options, see `stop`."
   [profile-before profile-after options]
   (let [options (merge @default-options options)
         {id1 :id, stack1 :stacks-file, ev1 :event} (find-profile profile-before)
