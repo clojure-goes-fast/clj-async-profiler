@@ -6,7 +6,7 @@
 
 (def default-opts
   (let [url "https://github.com/clojure-goes-fast/clj-async-profiler"
-        version "1.2.1"]
+        version "1.2.2"]
     {;; Pom section
      :lib 'com.clojure-goes-fast/clj-async-profiler
      :version version
