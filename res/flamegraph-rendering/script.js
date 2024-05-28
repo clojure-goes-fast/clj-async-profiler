@@ -747,7 +747,7 @@ function toggleSidebarVisibility() {
 // Chrome has fixed this but still a fix for those stuck on older version.
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) {
-    render();
+    render(currentRootFrame, currentRootLevel);
   }
 });
 

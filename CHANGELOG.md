@@ -1,5 +1,14 @@
 # Changelog
 
+### 1.2.2 (2024-05-28)
+
+- Fix the current view resetting when the flamegraph becomes inactive.
+
+### 1.2.1 (2024-05-25)
+
+- Work around a bug in Chrome that caused the rendered flamegraph to become
+  blank if the user switches away and back to the flamegraph tab.
+
 ### 1.2.0 (2024-02-06)
 
 - Update vendored async-profiler libraries to
