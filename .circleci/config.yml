@@ -38,11 +38,11 @@ workflows:
           matrix:
             parameters:
               docker-image:
-                - clojure:temurin-8-jammy
-                - clojure:temurin-11-jammy
-                - clojure:temurin-17-jammy
-                - clojure:temurin-21-jammy
-                - clojure:temurin-22-jammy
+                - clojure:temurin-8-noble
+                - clojure:temurin-11-noble
+                - clojure:temurin-17-noble
+                - clojure:temurin-21-noble
+                - clojure:temurin-22-noble
               clj-version: ["1.10", "1.11", "1.12"]
       - test:
           matrix:
