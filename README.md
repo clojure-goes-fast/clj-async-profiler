@@ -1,9 +1,9 @@
-# clj-async-profiler [![CircleCI](https://img.shields.io/circleci/build/github/clojure-goes-fast/clj-async-profiler/master.svg)](https://dl.circleci.com/status-badge/redirect/gh/clojure-goes-fast/clj-async-profiler/tree/master) ![](https://img.shields.io/badge/dependencies-none-brightgreen) [![](https://img.shields.io/clojars/dt/com.clojure-goes-fast/clj-async-profiler?color=teal)](https://clojars.org/com.clojure-goes-fast/clj-async-profiler) [![](https://img.shields.io/badge/-changelog-blue.svg)](CHANGELOG.md)
+# clj-async-profiler [![CircleCI](https://img.shields.io/circleci/build/github/clojure-goes-fast/clj-async-profiler/master.svg)](https://dl.circleci.com/status-badge/redirect/gh/clojure-goes-fast/clj-async-profiler/tree/master) ![](https://img.shields.io/badge/deps-none-teal) [![](https://img.shields.io/clojars/dt/com.clojure-goes-fast/clj-async-profiler?color=teal)](https://clojars.org/com.clojure-goes-fast/clj-async-profiler) ![](https://img.shields.io/github/commit-activity/y/clojure-goes-fast/clj-async-profiler?label=commits&color=blue) [![](https://img.shields.io/badge/-changelog-blue.svg)](CHANGELOG.md)
 
 **clj-async-profiler** is an embedded high-precision performance profiler for
-Clojure. Embedded means there is no software to install on your system, instead
-you add the profiler to your application as a dependency. From there, you can
-operate the profiler either programmatically or via a web UI. During profiling,
+Clojure. You don't need to install anything on your system, only add the
+profiler to your project as a dependency. From there, you can operate the
+profiler either programmatically or via a web UI. During profiling,
 clj-async-profiler has very low overhead, so it is suitable for usage even in
 highly loaded production scenarios.
 
@@ -19,10 +19,10 @@ Example flamegraph. <a href="https://htmlpreview.github.io/?https://github.com/c
 </sup></p>
 
 To collect the profiling data, clj-async-profiler utilizes
-[async-profiler](https://github.com/jvm-profiling-tools/async-profiler) which is
+[async-profiler](https://github.com/async-profiler/async-profiler) which is
 a low overhead sampling profiler for Java. Current version of async-profiler
 that is used by clj-async-profiler is
-[3.0](https://github.com/jvm-profiling-tools/async-profiler/releases/tag/v3.0).
+[3.0](https://github.com/async-profiler/async-profiler/releases/tag/v3.0).
 
 ## Usage
 
@@ -40,7 +40,7 @@ clj-async-profiler has the following requirements:
 
 On Linux, you need to allow async-profiler to use kernel profiling data by
 setting these two variables ([see
-also](https://github.com/jvm-profiling-tools/async-profiler#basic-usage)):
+also](https://github.com/async-profiler/async-profiler#basic-usage)):
 
 ```
 sudo sysctl -w kernel.perf_event_paranoid=1
@@ -102,7 +102,7 @@ Also check out this video from London Clojurians meetup:
 ### Tuning for better accuracy
 
 From [async-profiler
-README](https://github.com/jvm-profiling-tools/async-profiler#restrictionslimitations):
+README](https://github.com/async-profiler/async-profiler#restrictionslimitations):
 It is highly recommended to use `-XX:+UnlockDiagnosticVMOptions
 -XX:+DebugNonSafepoints` JVM flags. Without those flags the profiler will still
 work correctly but results might be less accurate. Without these options, there
@@ -127,18 +127,18 @@ large) by setting Java property `clj-async-profiler.output-dir`:
 
 clj-async-profiler ships with the precompiled native libraries that
 async-profiler itself
-[distributes](https://github.com/jvm-profiling-tools/async-profiler#download).
+[distributes](https://github.com/async-profiler/async-profiler#download).
 These include:
 
 - **Linux**: x64, aarch64 (arm64)
 - **MacOS**: x64/aarch64 (universal binary)
 
 To use clj-async-profiler on other [supported
-platforms](https://github.com/jvm-profiling-tools/async-profiler#supported-platforms),
+platforms](https://github.com/async-profiler/async-profiler#supported-platforms),
 you should do the following:
 
 1. Build
-   [async-profiler](https://github.com/jvm-profiling-tools/async-profiler#building)
+   [async-profiler](https://github.com/async-profiler/async-profiler#building)
    for the desired platform.
 2. Put the resulting `libasyncProfiler.so` in a place accessible by your JVM
    process (and which also allows code execution from).
@@ -150,9 +150,8 @@ you should do the following:
 
 ## Development
 
-[tools.deps](https://clojure.org/reference/deps_and_cli) is used as a build
-tool. Regular build tasks are inside [build.clj](build.clj) and invoked as
-`clojure -T:build test`, `clojure -T:build jar`, etc.
+Regular build tasks are inside [build.clj](build.clj) and invoked as `clojure
+-T:build test`, `clojure -T:build jar`, etc.
 
 When starting the REPL, you should add `dev` alias on the list so that
 [virgil](https://github.com/clj-commons/virgil) is loaded. Then, to compile Java
@@ -164,17 +163,16 @@ user> ((requiring-resolve 'virgil/compile-java) ["src"])
 
 ## License
 
-async-profiler is distributed under Apache-2.0.
-See [APACHE_PUBLIC_LICENSE](docs/APACHE_PUBLIC_LICENSE) file. The location of the original
-repository
-is
-[https://github.com/jvm-profiling-tools/async-profiler](https://github.com/jvm-profiling-tools/async-profiler).
+async-profiler is distributed under Apache-2.0. See
+[APACHE_PUBLIC_LICENSE](docs/APACHE_PUBLIC_LICENSE) file. The location of the
+original repository is
+[https://github.com/async-profiler/async-profiler](https://github.com/async-profiler/async-profiler).
 
 Copyright 2017-2024 Andrei Pangin
 
 ---
 
-clj-async-profiler is distributed under the Eclipse Public License.
-See [ECLIPSE_PUBLIC_LICENSE](docs/ECLIPSE_PUBLIC_LICENSE).
+clj-async-profiler is distributed under the Eclipse Public License. See
+[ECLIPSE_PUBLIC_LICENSE](docs/ECLIPSE_PUBLIC_LICENSE).
 
-Copyright 2017-2024 Alexander Yakushev
+Copyright 2017-2024 Oleksandr Yakushev
