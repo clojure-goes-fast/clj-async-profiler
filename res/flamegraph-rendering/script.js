@@ -743,14 +743,6 @@ function toggleSidebarVisibility() {
   applyConfiguration();
 }
 
-// Hack for Chrome bug that disposes canvas when the tab becomes inactive.
-// Chrome has fixed this but still a fix for those stuck on older version.
-document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) {
-    render(currentRootFrame, currentRootLevel);
-  }
-});
-
 // Context menu implementation was taken from https://github.com/heapoverride/context-js
 // and modified to suit our needs. Licensed Under MIT License, author: @UnrealSec
 class ContextMenu {
