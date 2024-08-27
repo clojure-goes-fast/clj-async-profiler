@@ -50,7 +50,7 @@
                          (:predefined-transforms options))
 
         full-js (-> (slurp (io/resource "flamegraph-rendering/script.js"))
-                    (str/replace "<<<graphTitle>>>" (or (:title options) ""))
+                    (str/replace "<<<graphTitle>>>" (pr-str (or (:title options) "")))
                     (str/replace "<<<isDiffgraph>>>" "false")
                     (str/replace "<<<userTransforms>>>" user-transforms)
                     (str/replace "<<<idToFrame>>>" idToFrame)
@@ -84,7 +84,7 @@
                          (:predefined-transforms options))
 
         full-js (-> (slurp (io/resource "flamegraph-rendering/script.js"))
-                    (str/replace "<<<graphTitle>>>" (or (:title options) ""))
+                    (str/replace "<<<graphTitle>>>" (pr-str (or (:title options) "")))
                     (str/replace "<<<isDiffgraph>>>" "true")
                     (str/replace "<<<userTransforms>>>" user-transforms)
                     (str/replace "<<<idToFrame>>>" idToFrame)

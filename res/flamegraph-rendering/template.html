@@ -1,14 +1,17 @@
 <html>
   <head>
+    <meta charset="utf-8"/>
     <style>
-      body {margin: 0; padding: 5px; background-color: #ffffff}
-      button {font: 12px sans-serif;}
+      body {margin:0; padding:0; background:linear-gradient(70deg, #ffffd0 0%, #fff 100%)}
       p {margin: 5px 0 5px 0}
       #hl {position: absolute; display: none; overflow: hidden; white-space: nowrap; pointer-events: none; background-color: #00000000; outline: 0.5px solid #222; height: 15px}
       #hl span {padding: 0 3px 0 3px}
-      #status {overflow: hidden; white-space: nowrap}
-      #match {overflow: hidden; white-space: nowrap; display: none; float: right; text-align: right}
-      * {box-sizing:border-box,margin:.25em 0}
+      .statusBox {background-color:#ffffe6; position:fixed; left:0; bottom:0; width:100%;
+                  box-sizing: border-box; padding:5px 1em; display:inline-flex;
+                  justify-content:space-between;}
+      #hoverTip {overflow: hidden; white-space: nowrap}
+      #matchContainer {/* overflow: hidden; white-space: nowrap; */ display: none; /* float: right; text-align: right */}
+      .wrapper {position:relative;}
       .col{display:table-cell}
       .col-1{width:5%}
       .col-2{width:15%}
@@ -16,142 +19,257 @@
       .col-4{width:30%}
       .col-5{width:40%}
       .col-6{width:50%}
-      .row{display:table;border-spacing:0.2em 0;width:100%;display:flex}
+      .row{display:table; border-spacing:0.2em 0; width:100%; display:flex;}
+      .sidebar-row{display:table; border-spacing:0.2em 0; width:100%; display:inline-flex;
+                   margin:5px 0; align-items: center;}
+      .vpadding5{padding:5px 0;}
       .w-100{width:100%;display:flex}
-      .graphCol{flex: 80%; padding: 0.25em;}
-      .configCol{flex: 20%; padding: 0.25em;}
-      .configBlock{position:fixed; overflow-y:auto; top: 5px; bottom: 5px; width:19%;}
-      .sidebarToggle{font: 10px; width:10; padding:0;}
-      .margins {margin: 5px 1px}
+      .graphCol{flex: 80%; padding:5 10; box-sizing:border-box;}
+      #sidebar{flex:20%;}
+      .configBlock{position:fixed; overflow-y:auto; top:1em; bottom:2.5em; padding:10px 6px;
+                   background: #fff; box-sizing: border-box; margin-right:1em;
+                   border-radius:10px; box-shadow:rgba(0, 0, 0, 0.24) 0px 3px 8px;}
+      #titleDiv {justify-content:center;}
+      .toggle.pressed {box-shadow: inset 0px 0px 2px 1px rgba(66, 68, 90, 1);}
+      .toggle {background-color: #fff; border:0; font-size:1.5em; border-radius: .25em;}
+      .toggle-icon {background-color: #fff; border:0; border-radius: .25em;}
+      .text-field {border:none; border-bottom:1.5px solid #b0b0b0; outline:none;
+                   padding:5px 0; transition:border-color 0.3s ease-in-out; background:transparent;}
+      .text-field:focus {border-bottom-color:#006d5b;}
+      #graphTitleSpan{display:inline-block; max-height:28px; font-size:9px;
+                      overflow:hidden; white-space:normal;}
+      .radio-input {display:none;}
+      .radio-label {display:inline-block; padding:5px 10px; position:relative;
+                    transition: color 0.3s ease; cursor:pointer;}
+      .radio-input:checked + .radio-label::after {
+          content:''; display:block; width:100%; height:2px; position:absolute;
+          background-color: #006d5b; bottom:0; left:0;}
+      .radio-input:checked + .radio-label {color:#006d5b;}
+      .btn:active {transform:scale(0.90);}
+      .toggle-button {background:none; border:none; padding:6px;
+                      transition: all 0.3s ease;}
+      .toggle-button svg {width:16px; height:16px; fill:#006d5b; stroke:#006d5b;
+                          transition: all 0.3s ease;}
+      .toggle-button.search svg {fill:white;}
+      .toggle-button:hover {background-color: #e6f2ff; border-radius: 5px;}
+      .toggle-button.search:hover svg {fill:#e6f2ff;}
+      .toggle-button:active {transform:scale(0.90);}
+      .toggle-button.toggled {background-color: #006d5b; border-radius: 5px;}
+      .toggle-button.toggled svg {stroke:#fff; fill:#fff;}
+      .toggle-button.toggled.search svg {fill:#006d5b;}
+      input {accent-color:#006d5b;}
+      
+      #hintbox {background:#eee;margin:5px -6px; padding:0 6px; color: #5b5b5b;
+                border-top:1.5px solid #5b5b5b; border-bottom:1.5px solid #5b5b5b;}
+      #hintbox svg {width:32px; height:32px; margin:0 10px;}
+      .chip {background:none; border: 1.5px solid #a5a5a5; border-radius:4px;
+             font-size:10px; width:70px; color:#575757; padding: 2px 0;}
+      .chip-row {justify-content:space-evenly;}
+      .xform-odd-block {background:#f4f4f4; margin-left:-3px; margin-right:-3px;
+                        padding-left:3px; padding-right:3px}
+      .xform-action-row {display:flex; justify-content:space-between; width:100%;
+                         align-items:center;}
+      .flx {display:flex; gap:5px; align-items:center;}
+      .minibtn {background:none; border:none;}
+      .minibtn svg {width:12px; height:12px;}
+      
+      #smallbar{box-sizing:border-box; padding:10px 6px; right:1em; top:1em;
+                position:fixed; z-index:100; background:#fff; border-radius:10px;
+                box-shadow:rgba(0, 0, 0, 0.24) 0px 3px 8px;}
+      .margins {margin-top:5px; margin-bottom:5px;}
       .vmargins {margin: 0px 1px;}
+
       .context {display: inline-block; position:fixed; top:0px; left:0px; min-width:200px;
                 color:#fff;  background:#262933; font-size:9pt; border:1px solid #333333;
-                border-radius:6px; box-shadow:2px 2px 2px -1px rgba(0, 0, 0, 0.5);
+                border-radius:6px; box-shadow:2px 2px 2px -1px #00000088;
                 padding:3px 0px; -webkit-touch-callout:none; -webkit-user-select:none;
                 -khtml-user-select:none; -moz-user-select:none; -ms-user-select:none;
                 user-select:none; z-index:200;}
       .context .item {padding:4px 19px; cursor:default; color:inherit;}
-      .context .item:hover { background:#2777FF;}
-      .context .item:hover .hotkey {color: #fff;}
-      .context .disabled {color:#878B90;}
+      .context .item:hover {background:#006d5b;}
+      .context .disabled {color:#878b90;}
       .context .disabled:hover {background:inherit;}
-      .context .disabled:hover .hotkey {color: #878B90;}
+      .context .disabled:hover .hotkey {color: #878b90;}
       .context .separator {margin:4px 0px; height:0; padding:0; border-top:1px solid #454545;}
-      .hotkey {color:#878B90; float:right;}
+      span.status {overflow:hidden;}
+
+      #spinner {color:#006d5b;}
+      #spinner, #spinner:after {box-sizing: border-box;}
+      #spinner {display:inline-block; width:12px; height:12px; margin-right: 5px;}
+      #spinner:after {content:" "; display:block; width:12px; height:12px;
+                      border-radius:50%; border:3px solid currentColor;
+                      border-color:currentColor transparent currentColor transparent;
+                      animation:spinner 1.2s cubic-bezier(.75,-0.55,.28,1.71) infinite;}
+      @keyframes spinner {0% {transform: rotate(0deg);} 100% {transform: rotate(360deg);}}
     </style>
   </head>
   <body style='font: 12px Verdana, sans-serif'>
-    <div class="c">
+    <div class="wrapper">
       <div class="row">
         <div class="graphCol">
-          <div id='canvasDiv'><canvas id='canvas' style='width: 100%;'></canvas></div>
-          <div id='box'><div id='hl'><span></span></div></div>
-          <p id='match'>Matched: <span id='matchedLabel'></span></p>
-          <p id='status'>&nbsp;</p>
+          <div id='canvasDiv'><canvas id='canvas' style='width:100%; margin-bottom:20px;'></canvas></div>
+          <div id='hl'><span></span></div>
+          <div class='statusBox'>
+            <span id="spinner"></span>
+            <span id='hoverTip'></span>
+            <span id='matchContainer'>Matched: <span id='matchedLabel'></span></span>
+          </div>
         </div>
-        <button class="sidebarToggle" onclick="toggleSidebarVisibility()">&lt;</button>
-        <div class="configCol">
+        <!-- Collapsed sidebar (smallbar) -->
+        <div id="smallbar" style="visibility:hidden;">
+          <div class="vpadding5"><button class="toggle-button" onclick="setSidebarVisibility(true)" title="Expand sidebar">
+              <svg><use href="#expand-icon"/></svg>
+          </button></div>
+          <div class="vpadding5"><button id="highlightButton1" class="toggle-button search" onclick="smallbarHighlightButtonOnClick()">
+              <svg><use href="#search-icon"/></svg>
+          </button></div>
+          <div class="vpadding5"><button id="inverseButton1" class="toggle-button" onclick="inverseOnClick()">
+              <svg><use href="#reverse-icon"/></svg>
+          </button> </div>
+        </div>
+        <!-- Full sidebar -->
+        <div id="sidebar" style="visibility:hidden;">
           <div class="configBlock">
-            <div id="titleDiv">
-              <b><center><span id="graphTitleSpan">Flamegraph</span></center></b>
-              <hr>
-            </div>
-            <div class="row">
-              <label for="highlightInput">Highlight:</label>
-              <input placeholder="String or /regex/" name="highlightInput" id="highlightInput"/>
-            </div>
-            <div class="row">
-              <button onclick="highlightApply()">Highlight</button>
-              <button onclick="highlightClear()">Clear</button>
-            </div>
-            <br>
-            <hr>
-            <br>
-
-            <label>Minimal frame width (in pixels):</label><br>
-            <input id="minFrameWidthInPx" value="0.25"/><br>
-            <div>
-              <label><input type="checkbox" id="isReversedInput">Reversed</label>
-              <span id="isNormalizedDiv" style="display:none;">
-                <label><input type="checkbox" id="isNormalized" name="isNormalized">Normalized</label>
-              </span>
-            </div>
-            <div>
-              <label><input type="radio" id="sortByNameRadio" name="sortBy" value="name">Sort by name</label>
-              <label><input type="radio" id="sortByWidthRadio" name="sortBy" value="width" checked>Sort by width</label>
-            </div>
-            <br>
-
-            <div class="row">
-              <div class="col">
-                <label for="newTransformType">Add a transform:</label>
-
-                <select name="newTransformType" id="newTransformType">
-                  <option value="filter">Filter</option>
-                  <option value="remove">Remove</option>
-                  <option value="replace">Replace</option>
-                </select>
+            <div class="sidebar-row">
+              <div id="titleDiv" class="w-100">
+                <b><span id="graphTitleSpan">Flamegraph</span></b>
               </div>
-              <div class="col col-2">
-                <button onclick="addNewTransform()">Add</button>
-              </div>
+              <button class="toggle-button" onclick="setSidebarVisibility(false)" title="Collapse sidebar">
+                <svg><use href="#collapse-icon"/></svg>
+              </button>
             </div>
-            <p><i>Right-click any stackframe to add common transforms.</i></p>
-            <br>
-
+            <div class="sidebar-row">
+              <input class="w-100 text-field" placeholder="Search string or /regex/" id="highlightInput"/>
+              &nbsp;
+              <button id="highlightButton2" class="toggle-button search" onclick="highlightButtonOnClick()">
+                <svg><use href="#search-icon"/></svg>
+              </button>
+            </div>
+            <div class="sidebar-row">
+              <div class="w-100"><strong>Reversed</strong></div>
+              <button id="inverseButton2" class="toggle-button" onclick="inverseOnClick()">
+                <svg><use href="#reverse-icon"/></svg>
+              </button>
+            </div>
+            <span id="isNormalizedDiv" style="display:none;">
+              <label><input type="checkbox" id="isNormalized" name="isNormalized">Normalized</label>
+            </span>
+            <div class="sidebar-row">
+              <div class="w-100"><strong>Sort by</strong></div>
+              <input type="radio" id="sortByNameRadio" name="sortBy" value="name" class="radio-input" onchange="sortRadioChange(this)">
+              <label for="sortByNameRadio" class="radio-label">Name</label>
+              <input type="radio" id="sortByWidthRadio" name="sortBy" value="width" class="radio-input" onchange="sortRadioChange(this)" checked>
+              <label for="sortByWidthRadio" class="radio-label">Width</label>
+            </div>
+            <a href="https://clojure-goes-fast.com/kb/profiling/clj-async-profiler/exploring-flamegraphs/" target="_blank">
+              <div id="hintbox">
+                <div class="sidebar-row">
+                  <svg><use href="#info-icon"/></svg>
+                  <p>Right-click any stackframe to add common transforms.</p>
+                </div>
+              </div>
+            </a>
+            <div class="sidebar-row chip-row">
+              <button class="chip btn" onclick="addNewTransform('filter')" >+ Filter</button>
+              <button class="chip btn" onclick="addNewTransform('remove')" >+ Remove</button>
+              <button class="chip btn" onclick="addNewTransform('replace')">+ Replace</button>
+            </div>
             <div id="transformsContainer">
             </div>
 
-            <div id="transformReplaceTemplate" style="display:none">
-              <div class="row">
-                <div class="col col-3">
-                  <label>Replace:</label><br>
+            <div id="transformReplaceTemplate" style="display:none" class="margins vpadding5">
+              <div class="xform-action-row">
+                <div class="flx">
+                  <input type="checkbox" class="chkEnabled" onchange="onTransformsChangedDontRecreate()" checked>
+                  <label>Replace</label>
                 </div>
-                <div class="col">
-                  <input type="checkbox" class="chkEnabled" onclick="refreshAfterEnabledToggle()" checked>
-                  <button class="minibtn btnMoveUp" title="Move up" onclick="moveTransformUp(this)">↑</button>
-                  <button class="minibtn btnMoveDown" title="Move down" onclick="moveTransformDown(this)">↓</button>
-                  <button class="minibtn btnClone" title="Clone" onclick="cloneTransform(this)">☍</button>
-                  <button class="minibtn btnDelete" title="Delete" onclick="deleteTransform(this)">✖</button>
+                <div class="flx">
+                  <button class="minibtn btn btnMoveUp" title="Move up" onclick="moveTransformUp(this)"><svg><use href="#arrow-up-icon"/></svg></button>
+                  <button class="minibtn btn btnDelete" title="Delete" onclick="deleteTransform(this)"><svg><use href="#delete-icon"/></svg></button>
                 </div>
               </div>
               <div class="row" style="margin-top:1px;margin-bottom:1px">
-                <div class="col w-100 no-vmargins">
-                  <input class="what no-vmargins w-100" placeholder="String or /regex/"/><br>
+                <div class="w-100 no-vmargins">
+                  <input class="what no-vmargins w-100 text-field" placeholder="String or /regex/"/><br>
                 </div>
               </div>
               <div class="row" style="margin-top:1px;margin-bottom:1px">
-                <div class="col w-100 no-vmargins">
-                  <input class="replacement no-vmargins w-100" placeholder="Replacement"/><br>
+                <div class="w-100 no-vmargins">
+                  <input class="replacement no-vmargins w-100 text-field" placeholder="Replacement"/><br>
                 </div>
               </div>
             </div>
 
-            <div id="transformFilterTemplate" style="display:none" class="margins">
-              <div class="row">
-                <div class="col col-3">
-                  <label class="label">Filter:</label><br>
+            <div id="transformFilterTemplate" style="display:none" class="margins vpadding5">
+              <div class="xform-action-row">
+                <div class="flx">
+                  <input type="checkbox" class="chkEnabled" onchange="onTransformsChangedDontRecreate()" checked>
+                  <label class="label">Filter</label>
                 </div>
-                <div class="col">
-                  <input type="checkbox" class="chkEnabled" onclick="refreshAfterEnabledToggle()" checked>
-                  <button class="minibtn btnMoveUp" title="Move up" onclick="moveTransformUp(this)">↑</button>
-                  <button class="minibtn btnMoveDown" title="Move down" onclick="moveTransformDown(this)">↓</button>
-                  <button class="minibtn btnClone" title="Clone" onclick="cloneTransform(this)">☍</button>
-                  <button class="minibtn btnDelete" title="Delete" onclick="deleteTransform(this)">✖</button>
+                <div class="flx">
+                  <button class="minibtn btn btnMoveUp" title="Move up" onclick="moveTransformUp(this)"><svg><use href="#arrow-up-icon"/></svg></button>
+                  <button class="minibtn btn btnDelete" title="Delete" onclick="deleteTransform(this)"><svg><use href="#delete-icon"/></svg></button>
                 </div>
               </div>
               <div class="row">
-                <div class="col w-100 margins">
-                  <input class="what margins w-100" placeholder="String or /regex/"/><br>
+                <div class="w-100">
+                  <input class="what w-100 text-field" placeholder="String or /regex/"/><br>
                 </div>
               </div>
             </div>
-
-            <hr>
-            <button onclick="applyConfiguration()">Apply</button>
           </div>
         </div>
       </div>
+      <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <symbol id="reverse-icon" viewBox="0 0 112.62 120.72">
+            <path d="M11.64,100.12l-.4-.47-1.06,8.63a5.08,5.08,0,0,1-1.92,3.41A5.11,5.11,0,0,1,0,107L2.79,84.65v-.07a3.28,3.28,0,0,1,.08-.41h0A5.09,5.09,0,0,1,9,80.39q11.22,2.53,22.42,5.15a5,5,0,0,1,3.17,2.25,5.14,5.14,0,0,1,.64,3.84v0a5,5,0,0,1-2.25,3.16,5.08,5.08,0,0,1-3.83.65c-3.31-.75-6.62-1.52-9.92-2.28a40.71,40.71,0,0,0,2.84,3,50.09,50.09,0,0,0,26.23,13.49,48.67,48.67,0,0,0,14.71.34A47.35,47.35,0,0,0,77,106h0q2.52-1.19,4.83-2.54c1.56-.93,3.07-1.92,4.51-3a50.8,50.8,0,0,0,8.56-7.88,48.92,48.92,0,0,0,6.39-9.45l.56-1.1,10,2.69-.8,1.66a58.64,58.64,0,0,1-7.9,12.24,61.28,61.28,0,0,1-10.81,10.1c-1.68,1.23-3.46,2.4-5.32,3.5s-3.73,2.07-5.74,3a58,58,0,0,1-17,5,58.56,58.56,0,0,1-17.79-.39,60.21,60.21,0,0,1-31.58-16.26c-1.2-1.16-2.26-2.31-3.24-3.45ZM101,20.6l.4.47,1-8.63a5.11,5.11,0,1,1,10.14,1.26l-2.74,22.37,0,.07c0,.13,0,.27-.07.41h0a5.09,5.09,0,0,1-6.08,3.78c-7.47-1.69-15-3.4-22.42-5.15a5,5,0,0,1-3.16-2.25,5.1,5.1,0,0,1-.65-3.84v0a5,5,0,0,1,2.25-3.16,5.1,5.1,0,0,1,3.84-.65c3.31.75,6.61,1.52,9.92,2.28-.84-1-1.77-2-2.84-3.05a50.09,50.09,0,0,0-12.13-8.73A49.49,49.49,0,0,0,64.37,11a48.6,48.6,0,0,0-14.7-.34,47.26,47.26,0,0,0-14,4.1h0q-2.53,1.18-4.83,2.54c-1.57.93-3.07,1.92-4.52,3a50.34,50.34,0,0,0-8.55,7.88,48,48,0,0,0-6.39,9.45l-.57,1.1L.76,36l.8-1.66A58.9,58.9,0,0,1,9.46,22.1,61.63,61.63,0,0,1,20.27,12q2.54-1.85,5.32-3.5c1.81-1.06,3.73-2.07,5.74-3a58,58,0,0,1,17-5A58.56,58.56,0,0,1,66.16.89a59.77,59.77,0,0,1,17,5.74A60.4,60.4,0,0,1,97.75,17.15c1.19,1.16,2.26,2.31,3.24,3.45Z"/>
+          </symbol>
+        </defs>
+      </svg>
+      <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <symbol id="search-icon" viewBox="0 0 12 12">
+            <path d="M11 11L8.58333 8.58333M9.88889 5.44444C9.88889 7.89906 7.89906 9.88889 5.44444 9.88889C2.98984 9.88889 1 7.89906 1 5.44444C1 2.98984 2.98984 1 5.44444 1C7.89906 1 9.88889 2.98984 9.88889 5.44444Z" stroke-linecap="round" stroke-linejoin="round"/>
+          </symbol>
+        </defs>
+      </svg>
+      <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <symbol id="expand-icon" viewBox="0 0 12 12">
+            <path d="M7.11111 4.88889L11 1M11 1H7.66667M11 1V4.33333M4.88889 7.11111L1 11M1 11H4.33333M1 11V7.66667" stroke-linecap="round" stroke-linejoin="round"/>
+          </symbol>
+        </defs>
+      </svg>
+      <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <symbol id="collapse-icon" viewBox="0 0 12 12">
+            <path d="M1.55556 7.11111H4.88889M4.88889 7.11111V10.4444M4.88889 7.11111L1 11M10.4444 4.88889H7.11111M7.11111 4.88889V1.55556M7.11111 4.88889L11 1" stroke-linecap="round" stroke-linejoin="round"/>
+          </symbol>
+        </defs>
+      </svg>
+      <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <symbol id="info-icon" viewBox="0 0 16 16" fill="none">
+            <path d="M8 10.8V8V10.8ZM8 5.2H8.007H8ZM15 8C15 11.866 11.866 15 8 15C4.13401 15 1 11.866 1 8C1 4.13401 4.13401 1 8 1C11.866 1 15 4.13401 15 8Z" fill="#EEEEEE"/>
+            <path d="M8 10.8V8M8 5.2H8.007M15 8C15 11.866 11.866 15 8 15C4.13401 15 1 11.866 1 8C1 4.13401 4.13401 1 8 1C11.866 1 15 4.13401 15 8Z" stroke="#5B5B5B" stroke-linecap="round" stroke-linejoin="round"/>
+          </symbol>
+        </defs>
+      </svg>
+      <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <symbol id="arrow-up-icon" viewBox="0 0 6 12" fill="none">
+            <path d="M3 4.76837e-07L0.113249 5H5.88675L3 4.76837e-07ZM3.5 12L3.5 4.5H2.5L2.5 12H3.5Z" fill="black"/>
+          </symbol>
+        </defs>
+      </svg>
+      <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <symbol id="delete-icon" viewBox="0 0 16 16" fill="none">
+            <line x1="3.8892" y1="3.88912" x2="11.6674" y2="11.6673" stroke="black"/><line x1="3.88912" y1="11.6674" x2="11.6673" y2="3.88927" stroke="black"/>
+          </symbol>
+        </defs>
+      </svg>
     </div>
     <script>
       {{script}}
