@@ -11,14 +11,19 @@ const matchContainer = document.getElementById('match');
 const transformFilterTemplate = document.getElementById('transformFilterTemplate');
 const transformReplaceTemplate = document.getElementById('transformReplaceTemplate');
 const sidebarToggleButton = document.getElementsByClassName('sidebarToggle')[0];
-const sidebarWidth = document.getElementsByClassName('configCol')[0].offsetWidth
+const sidebarWidth = document.getElementsByClassName('configCol')[0].offsetWidth;
 const qString = new URLSearchParams(window.location.search)
 
 var sidebarVisible = true;
-var canvasWidth;
+var canvasWidth, canvasHeight, minPixelsPerFrame = 0.25;
 
 if (qString.get('hide-sidebar') == 'true') {
   sidebarVisible = false;
+}
+
+// Always returns maximum available canvas width as if sidebar was collapsed.
+function fullCanvasWidth() {
+  return window.innerWidth - 26;
 }
 
 function updateSidebarState() {
@@ -26,11 +31,11 @@ function updateSidebarState() {
   if (sidebarVisible) {
     style.display = 'block';
     sidebarToggleButton.innerText = ">";
-    canvasWidth = window.innerWidth - sidebarWidth - 36;
+    canvasWidth = fullCanvasWidth() - sidebarWidth - 36;
   } else {
     style.display = 'none';
     sidebarToggleButton.innerText = "<";
-    canvasWidth = window.innerWidth - 36;
+    canvasWidth = fullCanvasWidth() - 36;
   }
 }
 
@@ -40,10 +45,9 @@ var graphTitle = "<<<graphTitle>>>";
 var isDiffgraph = <<<isDiffgraph>>>;
 var normalizeDiff = false, b_scale_factor;
 var reverseGraph = false;
-var idToFrame = [<<<idToFrame>>>];
 var initialStacks = [];
 var stacks;
-
+// idToFrame gets defined at the end of the file
 var _lastInsertedStack = null;
 
 function a(frameIds, samples) {
@@ -134,7 +138,7 @@ function applyReplacement(string, what, replacement, prefix) {
 }
 
 function transformStacks() {
-  console.time("transformStacks");
+  console.time("[clj-async-profiler] Transform stacks");
   let diff = isDiffgraph;
   var result;
   if (userTransforms.length > 0) {
@@ -185,16 +189,9 @@ function transformStacks() {
   } else
     result = initialStacks;
 
-  console.timeEnd("transformStacks");
+  console.timeEnd("[clj-async-profiler] Transform stacks");
   return result;
 }
-
-console.time("data exec time");
-
-  <<<stacks>>>
-
-console.timeEnd("data exec time");
-
 
 function makeTreeNode() {
   if (isDiffgraph)
@@ -216,7 +213,6 @@ function getChildNode(node, childTitle) {
 }
 
 function parseStacksToTreeSimple(stacks, treeRoot) {
-  console.time("parseStacksToTreeSimple");
   var depth = 0;
   for (var i = 0, len = stacks.length; i < len; i++) {
     var stack = stacks[i];
@@ -240,12 +236,10 @@ function parseStacksToTreeSimple(stacks, treeRoot) {
     node.total += stack.samples;
     node.self += stack.samples;
   }
-  console.timeEnd("parseStacksToTreeSimple");
   return depth;
 }
 
 function parseStacksToTreeDiffgraph(stacks, treeRoot) {
-  console.time("parseStacksToTreeDiffgraph");
   var depth = 0;
 
   for (var i = 0, len = stacks.length; i < len; i++) {
@@ -288,15 +282,15 @@ function parseStacksToTreeDiffgraph(stacks, treeRoot) {
     node.total_delta += delta;
     node.delta_abs += Math.abs(delta);
   }
-  console.timeEnd("parseStacksToTreeDiffgraph");
   return depth;
 }
 
 function parseStacksToTree(stacks, treeRoot) {
-  if (isDiffgraph)
-    return parseStacksToTreeDiffgraph(stacks, treeRoot);
-  else
-    return parseStacksToTreeSimple(stacks, treeRoot);
+  console.time("[clj-async-profiler] Generate tree");
+  let tree = isDiffgraph ? parseStacksToTreeDiffgraph(stacks, treeRoot)
+      : parseStacksToTreeSimple(stacks, treeRoot);
+  console.timeEnd("[clj-async-profiler] Generate tree");
+  return tree;
 }
 
 const palette = {
@@ -340,9 +334,7 @@ function scaleColorMap(colorMap, intensity) {
     decToHex(intensity * colorMap.green) + decToHex(intensity * colorMap.blue);
 }
 
-var stacks, tree, levels, depth;
-
-var smallestPixelsPerSample, minPixelsPerFrame = 0.25, minSamplesToShow;
+var stacks, tree, levels, depth, minSamplesToShow;
 
 function generateLevelsSimple(levels, node, title, level, x, minSamplesToShow) {
   var left = x;
@@ -403,55 +395,60 @@ function generateLevelsDiffgraph(levels, node, title, level, x, minSamplesToShow
   }
 }
 
-function generateLevels(levels, node, title, level, x, minSamplesToShow) {
+function generateLevels(node, title) {
+  levels = [];
   if (isDiffgraph)
-    generateLevelsDiffgraph(levels, node, title, level, x, minSamplesToShow);
+    generateLevelsDiffgraph(levels, node, title, 0, 0, minSamplesToShow);
   else
-    generateLevelsSimple(levels, node, title, level, x, minSamplesToShow);
+    generateLevelsSimple(levels, node, title, 0, 0, minSamplesToShow);
 }
 
-function refreshData() {
+function recomputeDataModel() {
   if (isDiffgraph && normalizeDiff)
     b_scale_factor = totalSamplesA / totalSamplesB;
 
   stacks = transformStacks();
-
   tree = makeTreeNode();
-
   depth = parseStacksToTree(stacks, tree);
-  smallestPixelsPerSample = canvasWidth / (tree.total || tree.delta_abs);
-  minSamplesToShow = minPixelsPerFrame / smallestPixelsPerSample;
 
-  levels = [];
-  generateLevels(levels, tree, "all", 0, 0, minSamplesToShow);
+  let totalSamples = tree.total || tree.delta_abs;
+  let pixelsPerSample = canvasWidth / totalSamples;
+  minSamplesToShow = minPixelsPerFrame / pixelsPerSample;
+
+  generateLevels(tree, "Total");
   depth = levels.length;
+  if (depth > 511) depth = 511;
 }
 
-refreshData();
-
-var canvasHeight;
-
-function initCanvas() {
+function reinitCanvas() {
   canvasHeight = (depth + 1) * 16;
   canvas.style.width = canvasWidth + 'px';
-  canvas.width = canvasWidth * (devicePixelRatio || 1);
-  canvas.height = canvasHeight * (devicePixelRatio || 1);
-  if (devicePixelRatio) c.scale(devicePixelRatio, devicePixelRatio);
+  if (devicePixelRatio) {
+    canvas.width = canvasWidth * devicePixelRatio;
+    canvas.height = canvasHeight * devicePixelRatio;
+    c.scale(devicePixelRatio, devicePixelRatio);
+  } else {
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+  }
   c.font = document.body.style.font;
 }
 
-initCanvas();
-isNormalizedDiv.style.display = isDiffgraph ? 'inherit' : 'none';
-if (graphTitle == "")
-  titleDiv.style.display = 'none';
-else
-  graphTitleSpan.innerText = graphTitle;
-
+function initSidebar() {
+  isNormalizedDiv.style.display = isDiffgraph ? 'inherit' : 'none';
+  if (graphTitle == "")
+    titleDiv.style.display = 'none';
+  else
+    graphTitleSpan.innerText = graphTitle;
+}
 
 var highlightPattern = null, currentRootFrame, currentRootLevel, currentFrameUnderCursor, currentLevelUnderCursor, px;
+var totalRenderedFrames = 0;
+
 
 function render(newRootFrame, newLevel) {
-  console.time("render");
+  var totalRenderedFrames = 0;
+  console.time("[clj-async-profiler] Render");
   // Background
   var gradient = c.createLinearGradient(0, 0, 0, canvasHeight);
   gradient.addColorStop(0.05, "#eeeeee");
@@ -485,6 +482,7 @@ function render(newRootFrame, newLevel) {
   const x1 = x0 + currentRootFrame.width;
 
   function drawFrame(f, y, alpha) {
+    totalRenderedFrames += 1;
     if (f.left < x1 && f.left + f.width > x0) {
       c.fillStyle = highlightPattern && f.title.match(highlightPattern) && mark(f) ? '#ee00ee' : f.color;
       c.fillRect((f.left - x0) * px, y, f.width * px, 15);
@@ -517,10 +515,9 @@ function render(newRootFrame, newLevel) {
     matchedLabel.textContent = pct(totalMarked(), currentRootFrame.width) + '%';
   } else
     matchContainer.style.display = 'none';
-  console.timeEnd("render");
+  console.log("[clj-async-profiler] Total frames rendered:", totalRenderedFrames);
+  console.timeEnd("[clj-async-profiler] Render");
 }
-
-render();
 
 function round2dig(n) {
   return Math.round(n * 100) / 100;
@@ -714,33 +711,34 @@ function redrawTransformsSection() {
   }
 }
 
-redrawTransformsSection();
-
 function scrollToTopOrBottom() {
   window.scrollTo(0, reverseGraph ? 0 : document.body.scrollHeight);
 }
 
-scrollToTopOrBottom();
+function fullRedraw() {
+  console.time("[clj-async-profiler] Full redraw");
+  syncTransformsModelWithUI();
+  recomputeDataModel();
+  reinitCanvas();
+  render();
+  console.timeEnd("[clj-async-profiler] Full redraw");
+}
 
 function applyConfiguration() {
-  console.time("apply config");
   minPixelsPerFrame = minFrameWidthInPx.value || 0.25;
   normalizeDiff = isNormalized.checked;
   let reverseChanged = (reverseGraph != isReversedInput.checked);
   reverseGraph = isReversedInput.checked;
-  syncTransformsModelWithUI();
-  refreshData();
-  initCanvas();
-  render();
+  fullRedraw();
   if (reverseChanged)
     scrollToTopOrBottom();
-  console.timeEnd("apply config");
 }
 
 function toggleSidebarVisibility() {
   sidebarVisible = !sidebarVisible;
   updateSidebarState();
-  applyConfiguration();
+  reinitCanvas();
+  render();
 }
 
 // Context menu implementation was taken from https://github.com/heapoverride/context-js
@@ -913,3 +911,18 @@ const ctxMenuData = [
 
 const ctxMenu = new ContextMenu(document.getElementById('canvasDiv'), ctxMenuData);
 ctxMenu.install();
+
+//// "Data" is inserted here
+
+console.time("[clj-async-profiler] Data load/eval");
+
+var idToFrame = [<<<idToFrame>>>];
+
+<<<stacks>>>
+
+console.timeEnd("[clj-async-profiler] Data load/eval");
+
+initSidebar();
+redrawTransformsSection();
+fullRedraw();
+scrollToTopOrBottom();
