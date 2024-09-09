@@ -1,54 +1,125 @@
 version: 2.1
 
-jobs:
-  test:
-    parameters:
-      docker-image:
-        type: string
-      clj-version:
-        type: string
-      is-alpine:
-        type: boolean
-        default: false
-    working_directory: ~/project
+defaults: &defaults
+  working_directory: ~/project
+
+executors:
+  jdk8:
     docker:
-      - image: << parameters.docker-image >>
-    environment:
-      CLOJURE_VERSION: << parameters.clj-version >>
+      - image: clojure:temurin-8-noble
+    <<: *defaults
+  jdk11:
+    docker:
+      - image: clojure:temurin-11-noble
+    <<: *defaults
+  jdk17:
+    docker:
+      - image: clojure:temurin-17-noble
+    <<: *defaults
+  jdk21:
+    docker:
+      - image: clojure:temurin-21-noble
+    <<: *defaults
+  jdk22:
+    docker:
+      - image: clojure:temurin-22-noble
+    <<: *defaults
+  jdk8-alpine:
+    docker:
+      - image: clojure:temurin-8-alpine
+    <<: *defaults
+  jdk21-alpine:
+    docker:
+      - image: clojure:temurin-21-alpine
+    <<: *defaults
+
+commands:
+  with_cache:
+    parameters:
+      steps:
+        type: steps
+      cache_key:
+        description: Will be used as part of the cache key
+        type: string
     steps:
-      - checkout
+      - run:
+          name: Generate cache checksum
+          command: |
+            for file in deps.edn project.clj
+            do
+              find . -name $file -exec cat {} +
+            done | sha256sum | awk '{print $1}' > /tmp/clojure_cache_seed
       - restore_cache:
-          key: project-{{ checksum "deps.edn" }}
-      - when:
-          condition: << parameters.is-alpine >>
-          steps:
-            - run: apk add --no-cache libstdc++
-      - run: >-
-           clojure -T:build javac && clojure -X:test:$CLOJURE_VERSION
+          key: cache-<< parameters.cache_key >>-{{ checksum "/tmp/clojure_cache_seed" }}
+      - steps: << parameters.steps >>
       - save_cache:
           paths:
             - ~/.m2
             - ~/.gitlibs
-          key: project-{{ checksum "deps.edn" }}
+            - .cpcache
+          key: cache-<< parameters.cache_key >>-{{ checksum "/tmp/clojure_cache_seed" }}
+
+jobs:
+  test:
+    parameters:
+      jdk_version:
+        type: string
+      is-alpine:
+        type: boolean
+        default: false
+    executor: << parameters.jdk_version >>
+    steps:
+      - checkout
+      - when:
+          condition: << parameters.is-alpine >>
+          steps:
+            - run: apk add --no-cache libstdc++
+      - with_cache:
+          cache_key: "test_v1"
+          steps:
+            - run: clojure -T:build javac
+            - run: CLOJURE_VERSION=1.10 clojure -X:1.10:test
+            - run: CLOJURE_VERSION=1.11 clojure -X:1.11:test
+            - run: CLOJURE_VERSION=1.12 clojure -X:1.12:test
+
+  deploy:
+    executor: jdk8
+    steps:
+      - checkout
+      - run:
+         name: Deploy
+         command: clojure -T:build deploy :version \"$CIRCLE_TAG\"
+
+tags_filter: &tags_filter
+  tags:
+    only: /^\d+\.\d+\.\d+/
 
 workflows:
-  test_all_jdks:
+  run_all:
     jobs:
       - test:
           matrix:
             parameters:
-              docker-image:
-                - clojure:temurin-8-noble
-                - clojure:temurin-11-noble
-                - clojure:temurin-17-noble
-                - clojure:temurin-21-noble
-                - clojure:temurin-22-noble
-              clj-version: ["1.10", "1.11", "1.12"]
+              jdk_version: [jdk8, jdk11, jdk17, jdk21, jdk22]
+          filters:
+            branches:
+              only: /.*/
+            <<: *tags_filter
       - test:
           matrix:
+            alias: "test-alpine"
             parameters:
-              docker-image:
-                - clojure:temurin-8-alpine
-                - clojure:temurin-21-alpine
-              clj-version: ["1.10", "1.11", "1.12"]
+              jdk_version: [jdk8-alpine, jdk21-alpine]
               is-alpine: [true]
+          filters:
+            branches:
+              only: /.*/
+            <<: *tags_filter
+      - deploy:
+          requires:
+            - test
+            - test-alpine
+          filters:
+            branches:
+              ignore: /.*/
+            <<: *tags_filter
