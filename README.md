@@ -1,16 +1,14 @@
 # clj-async-profiler [![CircleCI](https://img.shields.io/circleci/build/github/clojure-goes-fast/clj-async-profiler/master.svg)](https://dl.circleci.com/status-badge/redirect/gh/clojure-goes-fast/clj-async-profiler/tree/master) ![](https://img.shields.io/badge/deps-none-teal) [![](https://img.shields.io/clojars/dt/com.clojure-goes-fast/clj-async-profiler?color=teal)](https://clojars.org/com.clojure-goes-fast/clj-async-profiler) ![](https://img.shields.io/github/commit-activity/y/clojure-goes-fast/clj-async-profiler?label=commits&color=blue) [![](https://img.shields.io/badge/-changelog-blue.svg)](CHANGELOG.md)
 
 **clj-async-profiler** is an embedded high-precision performance profiler for
-Clojure. You don't need to install anything on your system, only add the
-profiler to your project as a dependency. From there, you can operate the
-profiler either programmatically or via a web UI. During profiling,
-clj-async-profiler has very low overhead, so it is suitable for usage even in
+Clojure. No need to install anything on your system — just add a single
+dependency to your project to operate the profiler either programmatically or
+via a web UI. The profiling overhead is very low, so it can be used even in
 highly loaded production scenarios.
 
-clj-async-profiler presents the profiling results as an interactive
-[flamegraph](http://www.brendangregg.com/flamegraphs.html). You can navigate the
-flamegraph, query it, change parameters and adapt the results for easier
-interpretation.
+clj-async-profiler presents the profiling results as an interactive flamegraph.
+You can navigate the flamegraph, query it, change parameters and adapt the
+results for easier interpretation.
 
 ![](docs/flamegraph-screenshot.png)
 

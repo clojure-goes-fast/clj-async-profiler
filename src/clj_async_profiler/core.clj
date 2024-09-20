@@ -1,6 +1,7 @@
 (ns clj-async-profiler.core
   (:require [clj-async-profiler.post-processing :as post-proc]
             [clj-async-profiler.render :as render]
+            [clj-async-profiler.util :as util]
             [clojure.java.io :as io]
             [clojure.string :as str])
   (:import java.io.File
@@ -65,11 +66,6 @@
   []
   (or @async-profiler-agent-path @inferred-agent-path))
 
-;;; Dynamic attach initialization
-
-(load (if (resolve 'java.lang.ProcessHandle)
-        "util/jdk11" "util/jdk8"))
-
 ;;; Profiling
 
 ;; Used to assign sequential IDs to profiler runs, so that just the ID instead
@@ -110,9 +106,9 @@
 (defn attach-agent [pid command-string]
   (let [pid (str pid)
         vm (or (@virtual-machines pid)
-               (get (swap! virtual-machines assoc pid (vm-attach pid)) pid))
+               (get (swap! virtual-machines assoc pid (util/vm-attach pid)) pid))
         agent-so (async-profiler-agent)]
-    (try (load-agent-path vm agent-so command-string)
+    (try (util/load-agent-path vm agent-so command-string)
          (catch Exception ex
            ;; If agent failed to load, try to load the library with System/load
            ;; which hopefully throws a more informative exception.
@@ -128,7 +124,7 @@
   ([] (list-event-types {}))
   ([options]
    (let [options (merge @default-options options)
-         pid (or (:pid options) (get-self-pid))
+         pid (or (:pid options) (util/get-self-pid))
          f (tmp-internal-file "list" "txt")
          _ (attach-agent pid (make-command-string "list" {:file f}))
          output (slurp f)
@@ -145,7 +141,7 @@
   ([] (status {}))
   ([options]
    (let [options (merge @default-options options)
-         pid (or (:pid options) (get-self-pid))
+         pid (or (:pid options) (util/get-self-pid))
          f (tmp-internal-file "status" "txt")]
      (attach-agent pid (make-command-string "status" {:file f}))
      (slurp f))))
@@ -164,7 +160,7 @@
   ([] (start {}))
   ([options]
    (let [options (merge @default-options options)
-         pid (or (:pid options) (get-self-pid))
+         pid (or (:pid options) (util/get-self-pid))
          f (tmp-internal-file "start" "txt")
          _ (attach-agent pid (make-command-string "start" (assoc options :file f)))
          msg (try (slurp f)
@@ -231,7 +227,7 @@
   ([] (stop {}))
   ([options]
    (let [options (merge @default-options options)
-         pid (or (:pid options) (get-self-pid))
+         pid (or (:pid options) (util/get-self-pid))
          ^String status-msg (status options)
          _ (when-not (.contains status-msg "is running")
              (throw (ex-info status-msg {})))
