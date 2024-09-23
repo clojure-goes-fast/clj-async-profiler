@@ -245,22 +245,16 @@
 
 (defmacro profile
   "Profile the execution of `body`. If the first argument is a map, treat it as
-  options. For available options, see `start` and `stop`. `:pid` option is
-  ignored, current process is always profiled. Additional options:
-
-  :return-file - if true, return the generated flamegraph file, otherwise return
-                 the value returned by `body` (default: false - return value)"
+  options. For available options, see `start` and `stop`."
   [options? & body]
   (let [[options body] (if (map? options?)
-                         [(dissoc options? :pid) body]
+                         [options? body]
                          [{} (cons options? body)])]
     `(let [options# ~options
            _# (println (start options#))
-           f# (atom nil)
            ret# (try ~@body
-                     (finally (reset! f# (stop options#))))]
-       (if (:return-file options#)
-         @f# ret#))))
+                     (finally (stop options#)))]
+       ret#)))
 
 (defn profile-for
   "Run the profiler for the specified duration. Return the generated flamegraph
