@@ -1,5 +1,14 @@
 # Changelog
 
+### master (unreleased)
+
+- [#37](https://github.com/clojure-goes-fast/clj-async-profiler/issues/37): Fix
+  load crashing when the profiler is compiled with AOT.
+
+### 1.3.0 (2024-09-10)
+
+- Big sidebar redesign ([details](https://clojure-goes-fast.com/blog/clj-async-profiler-130/)).
+
 ### 1.2.2 (2024-05-28)
 
 - Fix the current view resetting when the flamegraph becomes inactive.
