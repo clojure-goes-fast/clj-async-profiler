@@ -117,7 +117,7 @@
            (throw ex)))))
 
 (defn list-event-types
-  "Print all event types that can be sampled by the profiler. Available options:
+  "Print all event types that can be sampled by the profiler. Options:
 
   :pid - process to attach to (default: current process)
   :silent? - if true, only return the event types, don't print them."
@@ -135,7 +135,7 @@
      event-types)))
 
 (defn status
-  "Get profiling agent status. Available options:
+  "Get profiling agent status. Options:
 
   :pid - process to attach to (default: current process)"
   ([] (status {}))
@@ -146,17 +146,20 @@
      (attach-agent pid (make-command-string "status" {:file f}))
      (slurp f))))
 
-(defn start
-  "Start the profiler. Available options:
-
-  :pid - process to attach to (default: current process)
+(def ^:private start-options-docstring
+  ":event - event to profile, see `list-event-types` (default: :cpu)
   :interval - sampling interval in nanoseconds (default: 1000000 - 1ms)
-  :framebuf - size of the buffer for stack frames (default: 1000000 - 1MB)
   :threads - profile each thread separately
   :features - a list of extra features to enable. Supported features:
-    `:vtable` - show targets of vtable/itable calls
-    `:comptask` - show JIT compilation task
-  :event - event to profile, see `list-event-types` (default: :cpu)"
+    :vtable - show targets of vtable/itable calls
+    :comptask - show JIT compilation task
+  :framebuf - size of the buffer for stack frames (default: 1000000 - 1MB)")
+
+(defn start
+  "Start the profiler. Options:
+
+  :pid - process to attach to (default: current process)
+  %s"
   ([] (start {}))
   ([options]
    (let [options (merge @default-options options)
@@ -170,10 +173,26 @@
        (do (reset! start-options options)
            msg)
        (throw (ex-info msg {}))))))
+(alter-meta! #'start update :doc format start-options-docstring)
+
+(def ^:private stop-options-docstring
+  ":title - title of the generated flamegraph (optional)
+  :predefined-transforms - a list of maps that specify the dynamic transforms to
+                           bake into the flamegraph. For example:
+
+  ...
+  :predefined-transforms [{:type :remove
+                           :what \"frame_buffer_overflow\"}
+                          {:type :replace
+                           :what #\"(;manifold.deferred[^;]+)+\"
+                           :replacement \";manifold.deferred/...\"}
+  ...")
 
 (defn generate-flamegraph
   "Generate flamegraph from a collapsed stacks file, identified either by its file
-  path or numerical ID. For available options, see `stop`."
+  path or numerical ID. Options:
+
+  %s"
   [run-id-or-stacks-file options]
   (let [options (merge @default-options options)
         {:keys [id stacks-file event]} (find-profile run-id-or-stacks-file)
@@ -185,10 +204,13 @@
     (swap! flamegraph-file->metadata assoc flamegraph-file
            {:samples (:total-samples (meta compact-profile))})
     flamegraph-file))
+(alter-meta! #'generate-flamegraph update :doc format stop-options-docstring)
 
 (defn generate-diffgraph
   "Generate a diff flamegraph from two profiles, identified either by their file
-  paths or IDs. For available options, see `stop`."
+  paths or IDs. Options:
+
+  %s"
   [profile-before profile-after options]
   (let [options (merge @default-options options)
         {id1 :id, stack1 :stacks-file, ev1 :event} (find-profile profile-before)
@@ -204,6 +226,7 @@
     (spit diffgraph-file (render/render-html-diffgraph
                           diff-profile (assoc options :title title)))
     diffgraph-file))
+(alter-meta! #'generate-diffgraph update :doc format stop-options-docstring)
 
 (defn stop
   "Stop the currently running profiler and save the results into a text file.
@@ -213,17 +236,7 @@
   :pid - process to attach to (default: current process)
   :generate-flamegraph? - if true, generate flamegraph in the same directory as
                           the profile (default: true)
-  :title - title of the generated flamegraph (optional)
-  :predefined-transforms - a list of maps that specify the dynamic transforms to
-                           bake into the flamegraph. For example:
-
-  ...
-  :predefined-transforms [{:type :remove
-                           :what \"frame_buffer_overflow\"}
-                          {:type :replace
-                           :what #\"(;manifold.deferred[^;]+)+\"
-                           :replacement \";manifold.deferred/...\"}
-  ..."
+  %s"
   ([] (stop {}))
   ([options]
    (let [options (merge @default-options options)
@@ -242,10 +255,14 @@
      (if (:generate-flamegraph? options true)
        (generate-flamegraph run-id options)
        f))))
+(alter-meta! #'stop update :doc format stop-options-docstring)
 
 (defmacro profile
   "Profile the execution of `body`. If the first argument is a map, treat it as
-  options. For available options, see `start` and `stop`."
+  options. Options:
+
+  %s
+  %s"
   [options? & body]
   (let [[options body] (if (map? options?)
                          [options? body]
@@ -255,10 +272,15 @@
            ret# (try ~@body
                      (finally (stop options#)))]
        ret#)))
+(alter-meta! #'profile update :doc format start-options-docstring stop-options-docstring)
 
 (defn profile-for
   "Run the profiler for the specified duration. Return the generated flamegraph
-  file. For available options, see `start` and `stop`."
+  file. Options:
+
+  :pid - process to attach to (default: current process)
+  %s
+  %s"
   ([duration-in-seconds]
    (profile-for duration-in-seconds {}))
 
@@ -268,6 +290,7 @@
      (while (< (System/currentTimeMillis) deadline)
        (Thread/sleep 1000)))
    (stop options)))
+(alter-meta! #'profile-for update :doc format start-options-docstring stop-options-docstring)
 
 (defn serve-ui
   "Start profiler web UI on the given `host` (default: localhost) and `port`."
@@ -300,7 +323,9 @@
 (defn print-jvm-opt-for-startup-profiling
   "Generate a JVM option string that can be used to profile a JVM application
   completely from its start to finish. Prints further instructions to stdout.
-  Accepts the same options map as `start`."
+  Options:
+
+  %s"
   [options]
   (let [event (:event options :cpu)
         agent-path (async-profiler-agent)
@@ -319,3 +344,4 @@ Once the process finishes, go back to this REPL and execute this:
     (clj-async-profiler.core/generate-flamegraph \"%s\" {})"
              full-opt f))
     full-opt))
+(alter-meta! #'print-jvm-opt-for-startup-profiling update :doc format start-options-docstring)
