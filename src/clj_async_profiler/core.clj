@@ -92,13 +92,16 @@
   (case command
     "list" (format "%s,file=%s" command file)
     "status" (format "%s,file=%s" command file)
-    "start" (format "%s,event=%s,file=%s,interval=%s,%s%s%scollapsed"
-                    command (name event) file interval
-                    (if (seq features)
-                      (str "features=" (str/join "+" (map name features)) ",")
-                      "")
-                    (if framebuf (str "framebuf=" framebuf ",") "")
-                    (if threads "threads," ""))
+    "start" (let [features (if (= features :all)
+                             [:vtable :comptask]
+                             features)]
+              (format "%s,event=%s,file=%s,interval=%s,%s%s%scollapsed"
+                      command (name event) file interval
+                      (if (seq features)
+                        (str "features=" (str/join "+" (map name features)) ",")
+                        "")
+                      (if framebuf (str "framebuf=" framebuf ",") "")
+                      (if threads "threads," "")))
     "stop" (format "%s,file=%s,collapsed" command file)))
 
 (defonce ^:private virtual-machines (atom {}))
@@ -150,7 +153,7 @@
   ":event - event to profile, see `list-event-types` (default: :cpu)
   :interval - sampling interval in nanoseconds (default: 1000000 - 1ms)
   :threads - profile each thread separately
-  :features - a list of extra features to enable. Supported features:
+  :features - a list of extra features (or `:all` to enable all). Features:
     :vtable - show targets of vtable/itable calls
     :comptask - show JIT compilation task
   :framebuf - size of the buffer for stack frames (default: 1000000 - 1MB)")
