@@ -288,8 +288,10 @@ const palette = {
   java      : "#91dc51",
   clojure   : "#8fb5fe",
   highlight : "#ee00ee",
-  total     : "#999999"
-};
+  total     : "#999999",
+  diff      : { blue    : [51, 119, 255],    // #3377FF
+                neutral : [245, 245, 245],   // #F5F5F5
+                red     : [253, 59, 73] } }; // #FD3B49
 
 function frameColor(title) {
   if (title.endsWith("_[j]")) {
@@ -314,14 +316,28 @@ function decToHex(n) {
   return hex.length == 1 ? "0" + hex : hex;
 }
 
-function getDiffColor(isRed, intensity) {
-  return "hsl(" + ((isRed) ? 0 : 220) + ",100%," + Math.round(90 - intensity * 30) + "%)";
-  // return "hsl(" + ((isRed) ? 0 : 220) + "," + Math.round(100 * intensity) + "%, 60%)";
-}
+function getDiffColor(value) {
+  // Clamp the value between -1 and 1
+  value = Math.max(-1.0, Math.min(1.0, value));
 
-function scaleColorMap(colorMap, intensity) {
-  return '#' + decToHex(intensity * colorMap.red) +
-    decToHex(intensity * colorMap.green) + decToHex(intensity * colorMap.blue);
+  // Find the correct color range
+  let start, end;
+  if (value <= 0) {
+    start = palette.diff.blue;
+    end = palette.diff.neutral;
+    value = value + 1.0; // Normalize to 0.0-1.0
+  } else {
+    start = palette.diff.neutral;
+    end = palette.diff.red;
+  }
+
+  // Interpolate between colors
+  const r = Math.round(start[0] + (end[0] - start[0]) * value);
+  const g = Math.round(start[1] + (end[1] - start[1]) * value);
+  const b = Math.round(start[2] + (end[2] - start[2]) * value);
+
+  // Convert to hex
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
 var stacks, tree, levels, depth, minSamplesToShow = 0;
@@ -354,7 +370,7 @@ function generateLevelsDiffgraph(levels, node, title, level, x) {
 
   levels[level] = levels[level] || [];
   var change = (node.total_samples_a == 0) ? 1.0 : node.total_delta / node.total_samples_a;
-  var color = getDiffColor((node.total_delta > 0), Math.min(Math.abs(change), 1.0));
+  var color = getDiffColor(change);
   levels[level].push({left: left, width: node.delta_abs,
                       self_samples_a: node.self_samples_a,
                       self_samples_b: node.self_samples_b,

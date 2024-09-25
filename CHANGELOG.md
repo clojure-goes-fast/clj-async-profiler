@@ -2,6 +2,8 @@
 
 ### master (unreleased)
 
+- Update diffgraph color palette.
+
 ### 1.3.1 (2024-09-24)
 
 - [#37](https://github.com/clojure-goes-fast/clj-async-profiler/issues/37): Fix
