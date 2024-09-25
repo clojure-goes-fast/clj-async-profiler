@@ -6,6 +6,16 @@
       p {margin: 5px 0 5px 0}
       #hl {position: absolute; display: none; overflow: hidden; white-space: nowrap; pointer-events: none; background-color: #00000000; outline: 0.5px solid #222; height: 15px}
       #hl span {padding: 0 3px 0 3px}
+      #tooltip {position: absolute; display: none; overflow: hidden; white-space: normal;
+                pointer-events: none; background: #DCE3E5; box-shadow:#00000019 0px 2px 6px;
+                max-width: 250px; animation: .2s fadeIn; animation-fill-mode: forwards;
+                visibility: hidden; font-size: 11px; border-radius:4px;}
+      #tooltip span {overflow-wrap: anywhere; color: #4C4E4F; display: inline-block; margin: 4px 6px;}
+      #tooltip span.sep {margin: 4px 0; color:#fff;}
+      #tooltip .framediv {padding:0 0; border-bottom: 1px solid #fff;}
+      #tooltip .statdiv {display:flex; justify-content:space-around;}
+      #tooltipRightClickHint {font-size:9px; width:100%; display:flex; justify-content:center;}
+      @keyframes fadeIn { 99% { visibility:hidden; } 100% { visibility:visible; }}
       .statusBox {background-color:#ffffe6; position:fixed; left:0; bottom:0; width:100%;
                   box-sizing: border-box; padding:5px 1em; display:inline-flex;
                   justify-content:space-between;}
@@ -28,7 +38,7 @@
       #sidebar{flex:20%;}
       .configBlock{position:fixed; overflow-y:auto; top:1em; bottom:2.5em; padding:10px 6px;
                    background: #fff; box-sizing: border-box; margin-right:1em;
-                   border-radius:10px; box-shadow:rgba(0, 0, 0, 0.24) 0px 3px 8px;}
+                   border-radius:10px; box-shadow:#00000061 0px 3px 8px;}
       #titleDiv {justify-content:center;}
       .toggle.pressed {box-shadow: inset 0px 0px 2px 1px rgba(66, 68, 90, 1);}
       .toggle {background-color: #fff; border:0; font-size:1.5em; border-radius: .25em;}
@@ -76,7 +86,7 @@
       
       #smallbar{box-sizing:border-box; padding:10px 6px; right:1em; top:1em;
                 position:fixed; z-index:100; background:#fff; border-radius:10px;
-                box-shadow:rgba(0, 0, 0, 0.24) 0px 3px 8px;}
+                box-shadow:#00000061 0px 3px 8px;}
       .margins {margin-top:5px; margin-bottom:5px;}
       .vmargins {margin: 0px 1px;}
 
@@ -110,6 +120,17 @@
         <div class="graphCol">
           <div id='canvasDiv'><canvas id='canvas' style='width:100%; margin-bottom:20px;'></canvas></div>
           <div id='hl'><span></span></div>
+          <div id='tooltip'>
+            <div class="framediv"><span id='tooltipFrameSpan'></span></div>
+            <div class="statdiv">
+              <span id='tooltipSamplesSpan'><b>123,456</b> samples</span>
+              <span class="sep">|</span>
+              <span id='tooltipPctSelfSpan'><b>-41.67%</b> self</span>
+              <span class="sep" id="tooltipSep2">|</span>
+              <span id='tooltipPctTotalSpan'><b>+41.67%</b> total</span>
+            </div>
+            <div id="tooltipRightClickHint"><span><i>Right click for options</i></span></div>
+          </div>
           <div class='statusBox'>
             <span id="spinner"></span>
             <span id='hoverTip'></span>

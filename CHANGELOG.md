@@ -3,6 +3,7 @@
 ### master (unreleased)
 
 - Update diffgraph color palette.
+- Implement custom frame tooltip instead of the native on-hover tooltip.
 
 ### 1.3.1 (2024-09-24)
 

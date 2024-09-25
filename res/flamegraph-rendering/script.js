@@ -40,8 +40,15 @@ var stacks;
 // idToFrame gets defined at the end of the file
 var _lastInsertedStack = null;
 
-if (!isDiffgraph)
+var maxTooltipWidth = 250;
+if (isDiffgraph) {
+  maxTooltipWidth = 350;
+} else {
   isNormalizedDiv.remove();
+  tooltipSep2.remove();
+  tooltipPctTotalSpan.remove();
+}
+tooltip.style['max-width'] = maxTooltipWidth + 'px';
 graphTitleSpan.innerText = graphTitle;
 graphTitleSpan.title = graphTitle;
 
@@ -566,7 +573,7 @@ function render(newRootFrame, newLevel) {
 
   if (highlightPattern != null) {
     matchContainer.style.display = 'inherit';
-    matchedLabel.textContent = pct(totalMatched(), currentRootFrame.width) + '%';
+    matchedLabel.textContent = pct(totalMatched(), currentRootFrame.width);
   } else
     matchContainer.style.display = 'none';
   console.log("[clj-async-profiler] Total frames rendered:", totalRenderedFrames);
@@ -604,35 +611,80 @@ function findFrame(frames, x) {
   return null;
 }
 
-function samples(n, add_plus) {
-  return (add_plus && n > 0 ? "+" : "") + (n === 1 ? '1 sample' : n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' samples');
+function samples(n, add_plus, bold) {
+  let num = (add_plus && n > 0 ? "+" : "") + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  if (bold) num = '<b>' + num + '</b>';
+  return num + (n === 1 ? ' sample' : ' samples');
 }
 
 function pct(a, b) {
-  return a >= b ? '100' : (100 * a / b).toFixed(2);
+  let val = a >= b ? '100' : (100 * a / b).toFixed(2);
+  return val + '%';
 }
 
-function canvasOnMouseMove() {
+function bold(t) {
+  return '<b>' + t + '</b>';
+}
+
+function canvasOnMouseMove(e) {
   const h = Math.floor((reverseGraph ? event.offsetY : (canvasHeight - event.offsetY)) / 16);
-  currentLevelUnderCursor = h;
-  if (h >= 0 && h < levels.length) {
+  if (!ctxMenu.shown && h >= 0 && h < levels.length) {
     const f = findFrame(levels[h], event.offsetX / px + currentRootFrame.left);
+    var earlyReturn = h === currentLevelUnderCursor && f === currentFrameUnderCursor;
+    currentLevelUnderCursor = h;
     currentFrameUnderCursor = f;
     if (f && f.width >= minSamplesToShow) {
       hl.style.left = (Math.max(f.left - currentRootFrame.left, 0) * px + canvas.offsetLeft) + 'px';
       hl.style.width = (Math.min(f.width, currentRootFrame.width) * px) + 'px';
       hl.style.top = ((reverseGraph ? h * 16 : canvasHeight - (h + 1) * 16) + canvas.offsetTop) + 'px';
-      // hl.firstChild.textContent = f.title;
       hl.style.display = 'block';
+
+      if (earlyReturn) return;
+
+      tooltipFrameSpan.textContent = f.title;
+
+      tooltip.style.display = 'block';
+      tooltip.style.animation = 'none';
+      tooltip.offsetHeight; /* trigger reflow */
+      tooltip.style.animation = null;
+
+      var hoverTipText;
       if (isDiffgraph) {
         var rel_change = (f.total_samples_a == 0) ? 1.0 : f.total_delta / f.total_samples_a;
         var total_change = f.total_delta / tree.total_samples_a;
-        canvas.title = `${f.title}\n(${samples(f.total_delta, true)}, ${ratioToPct(rel_change)} self, ${ratioToPct(total_change)} total)`;
+        tooltipSamplesSpan.innerHTML = samples(f.total_delta, true, true);
+        tooltipPctSelfSpan.innerHTML = bold(ratioToPct(rel_change)) + ' self';
+        tooltipPctTotalSpan.innerHTML = bold(ratioToPct(total_change)) + ' total';
+        hoverTipText = `${f.title}\n(${samples(f.total_delta, true)}, ${ratioToPct(rel_change)} self, ${ratioToPct(total_change)} total)`;
         // , self_samples_a: ${f.self_samples_a}, self_samples_b: ${f.self_samples_b},  self_delta: ${f.self_delta},  total_samples_a: ${f.total_samples_a},  total_samples_b: ${f.total_samples_b}, total_delta: ${f.total_delta})`;
-      } else
-        canvas.title = f.title + '\n(' + samples(f.width) + ', ' + pct(f.width, levels[0][0].width) + '%)';
+      } else {
+        tooltipSamplesSpan.innerHTML = samples(f.width, false, true);
+        tooltipPctSelfSpan.innerHTML = bold(pct(f.width, levels[0][0].width));
+        hoverTipText = f.title + '\n(' + samples(f.width) + ', ' + pct(f.width, levels[0][0].width) + ')';
+      }
+
+      let cursor_x  = e.clientX + window.pageXOffset;
+      let cursor_y  = e.clientY + window.pageYOffset;
+      let tooltip_w = tooltip.clientWidth;
+      let tooltip_h = tooltip.clientHeight;
+      var tooltip_x = cursor_x;
+      var tooltip_y = cursor_y + 20; // Below cursor
+
+      if (cursor_x + tooltip_w + 20 > canvas.clientWidth) {
+        tooltip_x = cursor_x - tooltip_w;
+      }
+
+      if (cursor_y + tooltip_h + 20 > canvas.clientHeight) {
+        tooltip_y = cursor_y - tooltip_h;
+      }
+
+      console.log("cursor_x", cursor_x, "clientWidth", canvas.clientWidth, "tooltip_w", tooltip_w, "tooltip_h", tooltip_h, "tooltip_x", tooltip_x);
+
+      tooltip.style.left = tooltip_x;
+      tooltip.style.top = tooltip_y;
+
       canvas.style.cursor = 'pointer';
-      hoverTip.textContent = 'Function: ' + canvas.title;
+      hoverTip.textContent = 'Function: ' + hoverTipText;
       return;
     }
   }
@@ -642,12 +694,14 @@ function canvasOnMouseMove() {
 function canvasOnClick() {
   if (currentFrameUnderCursor && currentFrameUnderCursor != currentRootFrame) {
     render(currentFrameUnderCursor, currentLevelUnderCursor);
+    hl.style.display = 'none';
     canvas.onmousemove();
   }
 }
 
 function canvasOnMouseOut() {
   hl.style.display = 'none';
+  tooltip.style.display = 'none';
   hoverTip.textContent = '\xa0';
   canvas.title = '';
   canvas.style.cursor = '';
@@ -858,6 +912,7 @@ class ContextMenu {
           !e.target.parentElement.classList.contains('item') &&
           currentFrameUnderCursor) {
         e.preventDefault();
+        tooltipRightClickHint.style.display = 'none';
         this.hide();
         this.frame = currentFrameUnderCursor;
         this.show(e.clientX, e.clientY);
