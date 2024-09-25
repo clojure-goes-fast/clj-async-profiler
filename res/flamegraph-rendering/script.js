@@ -918,6 +918,19 @@ class ContextMenu {
         this.show(e.clientX, e.clientY);
       }
     };
+    this._oncontextmenu_keydown = e => {
+      if (e.keyCode == 27) {
+        this.hideAll();
+        return;
+      }
+      if (e.keyCode != 93) return;
+      e.preventDefault();
+
+      this.hideAll();
+      this.show(e.clientX, e.clientY);
+    };
+
+
     this._onblur = e => { this.hide(); };
   }
   getMenuDom() {
@@ -986,6 +999,9 @@ class ContextMenu {
     this.container.addEventListener('contextmenu', this._oncontextmenu, false);
     this.container.addEventListener('keydown', this._oncontextmenu_keydown);
     this.container.addEventListener('click', this._onclick);
+    document.addEventListener('keydown', (event) => {
+      if (event.keyCode == 27) this.hide();
+    });
     window.addEventListener('blur', this._onblur);
   }
 }
