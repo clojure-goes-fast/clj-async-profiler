@@ -58,6 +58,7 @@
       .toggle-button.toggled svg {stroke:#fff; fill:#fff;}
       .toggle-button.toggled.search svg {fill:#006d5b;}
       input {accent-color:#006d5b;}
+      input#isNormalized {weight:16; height:16; margin:6;}
       
       #hintbox {background:#eee;margin:5px -6px; padding:0 6px; color: #5b5b5b;
                 border-top:1.5px solid #5b5b5b; border-bottom:1.5px solid #5b5b5b;}
@@ -151,9 +152,10 @@
                 <svg><use href="#reverse-icon"/></svg>
               </button>
             </div>
-            <span id="isNormalizedDiv" style="display:none;">
-              <label><input type="checkbox" id="isNormalized" name="isNormalized">Normalized</label>
-            </span>
+            <div class="sidebar-row" id="isNormalizedDiv">
+              <div class="w-100"><strong>Normalized</strong></div>
+              <input type="checkbox" id="isNormalized" name="isNormalized" onchange="onTransformsChangedDontRecreate()">
+            </div>
             <div class="sidebar-row">
               <div class="w-100"><strong>Sort by</strong></div>
               <input type="radio" id="sortByNameRadio" name="sortBy" value="name" class="radio-input" onchange="sortRadioChange(this)">

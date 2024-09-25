@@ -40,7 +40,8 @@ var stacks;
 // idToFrame gets defined at the end of the file
 var _lastInsertedStack = null;
 
-isNormalizedDiv.style.display = isDiffgraph ? 'inherit' : 'none';
+if (!isDiffgraph)
+  isNormalizedDiv.remove();
 graphTitleSpan.innerText = graphTitle;
 graphTitleSpan.title = graphTitle;
 
