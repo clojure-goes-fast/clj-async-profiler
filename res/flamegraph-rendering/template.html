@@ -22,14 +22,7 @@
       #hoverTip {overflow: hidden; white-space: nowrap}
       #matchContainer {/* overflow: hidden; white-space: nowrap; */ display: none; /* float: right; text-align: right */}
       .wrapper {position:relative;}
-      .col{display:table-cell}
-      .col-1{width:5%}
-      .col-2{width:15%}
-      .col-3{width:22%}
-      .col-4{width:30%}
-      .col-5{width:40%}
-      .col-6{width:50%}
-      .row{display:table; border-spacing:0.2em 0; width:100%; display:flex;}
+      .row{border-spacing:0.2em 0; width:100%; display:flex;}
       .sidebar-row{display:table; border-spacing:0.2em 0; width:100%; display:inline-flex;
                    margin:5px 0; align-items: center;}
       .vpadding5{padding:5px 0;}
@@ -40,9 +33,6 @@
                    background: #fff; box-sizing: border-box; margin-right:1em;
                    border-radius:10px; box-shadow:#00000061 0px 3px 8px;}
       #titleDiv {justify-content:center;}
-      .toggle.pressed {box-shadow: inset 0px 0px 2px 1px rgba(66, 68, 90, 1);}
-      .toggle {background-color: #fff; border:0; font-size:1.5em; border-radius: .25em;}
-      .toggle-icon {background-color: #fff; border:0; border-radius: .25em;}
       .text-field {border:none; border-bottom:1.5px solid #b0b0b0; outline:none;
                    padding:5px 0; transition:border-color 0.3s ease-in-out; background:transparent;}
       .text-field:focus {border-bottom-color:#006d5b;}
@@ -56,26 +46,21 @@
           background-color: #006d5b; bottom:0; left:0;}
       .radio-input:checked + .radio-label {color:#006d5b;}
       .btn:active {transform:scale(0.90);}
-      .toggle-button {background:none; border:none; padding:6px;
-                      transition: all 0.3s ease;}
-      .toggle-button svg {width:16px; height:16px; fill:#006d5b; stroke:#006d5b;
-                          transition: all 0.3s ease;}
-      .toggle-button.search svg {fill:white;}
-      .toggle-button:hover {background-color: #e6f2ff; border-radius: 5px;}
-      .toggle-button.search:hover svg {fill:#e6f2ff;}
-      .toggle-button:active {transform:scale(0.90);}
-      .toggle-button.toggled {background-color: #006d5b; border-radius: 5px;}
-      .toggle-button.toggled svg {stroke:#fff; fill:#fff;}
-      .toggle-button.toggled.search svg {fill:#006d5b;}
+      .toggle {background:none; border:none; padding:6px; transition: all 0.3s ease;}
+      .toggle svg {width:16px; height:16px; fill:#006d5b; stroke:#006d5b;
+                   transition: all 0.3s ease;}
+      .toggle.arcs svg {fill:white;}
+      .toggle:hover {background-color: #e6f2ff; border-radius: 5px;}
+      .toggle.arcs:hover svg {fill:#e6f2ff;}
+      .toggle:active {transform:scale(0.90);}
+      .toggle.toggled {background-color: #006d5b; border-radius: 5px;}
+      .toggle.toggled svg {stroke:#fff; fill:#fff;}
+      .toggle.toggled.arcs svg {fill:#006d5b;}
       input {accent-color:#006d5b;}
       input#isNormalized {weight:16; height:16; margin:6;}
-      
-      #hintbox {background:#eee;margin:5px -6px; padding:0 6px; color: #5b5b5b;
-                border-top:1.5px solid #5b5b5b; border-bottom:1.5px solid #5b5b5b;}
-      #hintbox svg {width:32px; height:32px; margin:0 10px;}
       .chip {background:none; border: 1.5px solid #a5a5a5; border-radius:4px;
              font-size:10px; width:70px; color:#575757; padding: 2px 0;}
-      .chip-row {justify-content:space-evenly;}
+      .chip-row {justify-content:space-evenly; margin-top: 1.5em;}
       .xform-odd-block {background:#f4f4f4; margin-left:-3px; margin-right:-3px;
                         padding-left:3px; padding-right:3px}
       .xform-action-row {display:flex; justify-content:space-between; width:100%;
@@ -139,13 +124,13 @@
         </div>
         <!-- Collapsed sidebar (smallbar) -->
         <div id="smallbar" style="visibility:hidden;">
-          <div class="vpadding5"><button class="toggle-button" onclick="setSidebarVisibility(true)" title="Expand sidebar">
+          <div class="vpadding5"><button class="toggle" onclick="setSidebarVisibility(true)" title="Expand sidebar">
               <svg><use href="#expand-icon"/></svg>
           </button></div>
-          <div class="vpadding5"><button id="highlightButton1" class="toggle-button search" onclick="smallbarHighlightButtonOnClick()">
+          <div class="vpadding5"><button id="highlightButton1" class="toggle arcs" onclick="smallbarHighlightButtonOnClick()">
               <svg><use href="#search-icon"/></svg>
           </button></div>
-          <div class="vpadding5"><button id="inverseButton1" class="toggle-button" onclick="inverseOnClick()">
+          <div class="vpadding5"><button id="inverseButton1" class="toggle" onclick="inverseOnClick()">
               <svg><use href="#reverse-icon"/></svg>
           </button> </div>
         </div>
@@ -156,20 +141,20 @@
               <div id="titleDiv" class="w-100">
                 <b><span id="graphTitleSpan">Flamegraph</span></b>
               </div>
-              <button class="toggle-button" onclick="setSidebarVisibility(false)" title="Collapse sidebar">
+              <button class="toggle" onclick="setSidebarVisibility(false)" title="Collapse sidebar">
                 <svg><use href="#collapse-icon"/></svg>
               </button>
             </div>
             <div class="sidebar-row">
               <input class="w-100 text-field" placeholder="Search string or /regex/" id="highlightInput"/>
               &nbsp;
-              <button id="highlightButton2" class="toggle-button search" onclick="highlightButtonOnClick()">
+              <button id="highlightButton2" class="toggle arcs" onclick="highlightButtonOnClick()">
                 <svg><use href="#search-icon"/></svg>
               </button>
             </div>
             <div class="sidebar-row">
               <div class="w-100"><strong>Reversed</strong></div>
-              <button id="inverseButton2" class="toggle-button" onclick="inverseOnClick()">
+              <button id="inverseButton2" class="toggle" onclick="inverseOnClick()">
                 <svg><use href="#reverse-icon"/></svg>
               </button>
             </div>
@@ -184,14 +169,6 @@
               <input type="radio" id="sortByWidthRadio" name="sortBy" value="width" class="radio-input" onchange="sortRadioChange(this)" checked>
               <label for="sortByWidthRadio" class="radio-label">Width</label>
             </div>
-            <a href="https://clojure-goes-fast.com/kb/profiling/clj-async-profiler/exploring-flamegraphs/" target="_blank">
-              <div id="hintbox">
-                <div class="sidebar-row">
-                  <svg><use href="#info-icon"/></svg>
-                  <p>Right-click any stackframe to add common transforms.</p>
-                </div>
-              </div>
-            </a>
             <div class="sidebar-row chip-row">
               <button class="chip btn" onclick="addNewTransform('filter')" >+ Filter</button>
               <button class="chip btn" onclick="addNewTransform('remove')" >+ Remove</button>
