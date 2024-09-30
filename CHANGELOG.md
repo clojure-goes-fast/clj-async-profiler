@@ -2,6 +2,8 @@
 
 ### master (unreleased)
 
+### 1.3.2 (2024-09-30)
+
 - Update diffgraph color palette.
 - Implement custom frame tooltip instead of the native on-hover tooltip.
 - Close context menu by pressing Escape.
