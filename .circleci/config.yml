@@ -20,9 +20,9 @@ executors:
     docker:
       - image: clojure:temurin-21-noble
     <<: *defaults
-  jdk22:
+  jdk23:
     docker:
-      - image: clojure:temurin-22-noble
+      - image: clojure:temurin-23-noble
     <<: *defaults
   jdk8-alpine:
     docker:
@@ -100,7 +100,7 @@ workflows:
       - test:
           matrix:
             parameters:
-              jdk_version: [jdk8, jdk11, jdk17, jdk21, jdk22]
+              jdk_version: [jdk8, jdk11, jdk17, jdk21, jdk23]
           filters:
             branches:
               only: /.*/
