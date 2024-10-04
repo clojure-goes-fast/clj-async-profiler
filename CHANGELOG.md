@@ -2,6 +2,10 @@
 
 ### master (unreleased)
 
+### 1.3.3 (2024-10-04)
+
+- [async-profiler#932](https://github.com/async-profiler/async-profiler/issues/923): Fix SIGSEVG crash on JDK23.
+
 ### 1.3.2 (2024-09-30)
 
 - Update diffgraph color palette.
