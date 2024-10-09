@@ -1,6 +1,7 @@
-// This file was taken from https://github.com/async-profiler/async-profiler and
-// heavily rewritten afterwards.
-// Licensed under the Apache License, Version 2.0. Copyright 2020 Andrei Pangin
+// SPDX-License-Identifier: EPL-1.0
+// Copyright 2021-2024 Oleksandr Yakushev
+// Contains code from https://github.com/async-profiler/async-profiler, licensed
+// under Apache License, Version 2.0.
 
 /// Constants
 const c = canvas.getContext('2d');
