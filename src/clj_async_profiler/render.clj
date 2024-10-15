@@ -2,6 +2,35 @@
   (:require [clojure.java.io :as io]
             [clojure.string :as str]))
 
+;;;; Minimal probably-incorrect templating engine in the name of 0-deps gods.
+
+(defn- parse-template [^String template]
+  (loop [i 0, parts [], open? false]
+    (let [next-i (.indexOf template (if open? ">>>" "<<<") i)]
+      (if (= next-i -1)
+        (conj parts (subs template i))
+        (recur (+ next-i 3)
+               (conj parts (cond-> (subs template i next-i)
+                             open? keyword))
+               (not open?))))))
+
+#_(parse-template "<<<a>>>regular text <<<b>>> and then also<<<c>>> end")
+
+(defn render-template [template variables-map]
+  (let [sb (StringBuilder.)]
+    (doseq [part (parse-template template)]
+      (.append sb (if (keyword? part)
+                    (if-some [val (get variables-map part)]
+                      (str val)
+                      (throw (ex-info (str "Missing value for" part) {})))
+                    part)))
+    (str sb)))
+
+#_(render-template "<<<a>>>regular text <<<b>>> and then also<<<c>>>"
+                   {:a 1, :b "two", :c []})
+
+;;;; Flamegraph rendering
+
 (defn- validate-predefined-transform [transform]
   (assert (#{:filter :remove :replace} (:type transform)))
   (assert (contains? #{nil true false} (:enabled transform)))
@@ -26,68 +55,45 @@
          (str/join ",\n"))
     ""))
 
-(defn render-html-flamegraph [compact-profile options]
+(defn- print-id-to-frame [id->frame]
+  (let [sb (StringBuilder.)]
+    (doseq [frame id->frame]
+      (.append sb "\"")
+      (.append sb frame)
+      (.append sb "\",\n"))
+    (str sb)))
+
+(defn- print-add-stacks [stacks diffgraph?]
+  (let [sb (StringBuilder.)
+        prefix (if diffgraph? "d([" "a([")]
+    (doseq [[stack value] stacks]
+      (.append sb prefix)
+      (doseq [frame stack]
+        (.append sb frame)
+        (.append sb ","))
+      (.append sb "],")
+      (if diffgraph?
+        (let [{:keys [samples-a samples-b delta]} value]
+          (.append sb (str samples-a))
+          (.append sb ",")
+          (.append sb (str samples-b)))
+        (.append sb (str value)))
+      (.append sb ");\n"))
+    (str sb)))
+
+(defn render-html-flamegraph [compact-profile options diffgraph?]
   (let [{:keys [stacks id->frame]} compact-profile
-        sb (StringBuilder.)
-        _ (doseq [frame id->frame]
-            (.append sb "\"")
-            (.append sb frame)
-            (.append sb "\",\n"))
-        idToFrame (str sb)
-
-        sb (StringBuilder.)
-        _ (doseq [[stack cnt] stacks]
-            (.append sb "a([")
-            (doseq [frame stack]
-              (.append sb frame)
-              (.append sb ","))
-            (.append sb "],")
-            (.append sb (str cnt))
-            (.append sb ");\n"))
-        data (str sb)
-
+        idToFrame (print-id-to-frame id->frame)
+        data (print-add-stacks stacks diffgraph?)
         user-transforms (render-predefined-transforms
                          (:predefined-transforms options))
 
         full-js (-> (slurp (io/resource "flamegraph-rendering/script.js"))
-                    (str/replace "<<<graphTitle>>>" (pr-str (or (:title options) "")))
-                    (str/replace "<<<isDiffgraph>>>" "false")
-                    (str/replace "<<<userTransforms>>>" user-transforms)
-                    (str/replace "<<<idToFrame>>>" idToFrame)
-                    (str/replace "<<<stacks>>>" data))]
+                    (render-template
+                     {:graphTitle     (pr-str (or (:title options) ""))
+                      :isDiffgraph    (str (boolean diffgraph?))
+                      :userTransforms user-transforms
+                      :idToFrame      idToFrame
+                      :stacks         data}))]
     (-> (slurp (io/resource "flamegraph-rendering/template.html"))
-        (str/replace "{{script}}" full-js))))
-
-(defn render-html-diffgraph [compact-diff-profile options]
-  (let [{:keys [stacks id->frame]} compact-diff-profile
-        sb (StringBuilder.)
-        _ (doseq [frame id->frame]
-            (.append sb "\"")
-            (.append sb frame)
-            (.append sb "\",\n"))
-        idToFrame (str sb)
-
-        sb (StringBuilder.)
-        _ (doseq [[stack {:keys [samples-a samples-b delta]}] stacks]
-            (.append sb "d([")
-            (doseq [frame stack]
-              (.append sb frame)
-              (.append sb ","))
-            (.append sb "],")
-            (.append sb (str samples-a))
-            (.append sb ",")
-            (.append sb (str samples-b))
-            (.append sb ");\n"))
-        data (str sb)
-
-        user-transforms (render-predefined-transforms
-                         (:predefined-transforms options))
-
-        full-js (-> (slurp (io/resource "flamegraph-rendering/script.js"))
-                    (str/replace "<<<graphTitle>>>" (pr-str (or (:title options) "")))
-                    (str/replace "<<<isDiffgraph>>>" "true")
-                    (str/replace "<<<userTransforms>>>" user-transforms)
-                    (str/replace "<<<idToFrame>>>" idToFrame)
-                    (str/replace "<<<stacks>>>" data))]
-    (-> (slurp (io/resource "flamegraph-rendering/template.html"))
-        (str/replace "{{script}}" full-js))))
+        (render-template {:script full-js}))))

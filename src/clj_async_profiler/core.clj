@@ -203,7 +203,8 @@
                                                   id (name event)) "html")
         compact-profile (post-proc/read-raw-profile-file-to-compact-profile
                          stacks-file (get options :transform identity))]
-    (spit flamegraph-file (render/render-html-flamegraph compact-profile options))
+    (spit flamegraph-file (render/render-html-flamegraph
+                           compact-profile options false))
     (swap! flamegraph-file->metadata assoc flamegraph-file
            {:samples (:total-samples (meta compact-profile))})
     flamegraph-file))
@@ -226,8 +227,8 @@
         diffgraph-file (tmp-results-file
                         (format "%02d_%02d-%s-diff" id1 id2 (name ev1)) "html")
         title (str (.getName ^File stack1) " vs " (.getName ^File stack2))]
-    (spit diffgraph-file (render/render-html-diffgraph
-                          diff-profile (assoc options :title title)))
+    (spit diffgraph-file (render/render-html-flamegraph
+                          diff-profile (assoc options :title title) true))
     diffgraph-file))
 (alter-meta! #'generate-diffgraph update :doc format stop-options-docstring)
 
