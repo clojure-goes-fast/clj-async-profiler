@@ -72,6 +72,19 @@
 
 #_(find-profile (results-file (java.util.Date.) 1 :cpu "flamegraph" "txt"))
 
+(defn find-stacks-file-by-flamegraph-file [^File flamegraph-file]
+  (if-some [mta (@file->metadata flamegraph-file)]
+    (:stacks-file mta)
+    ;; If the given flamegraph file has no in-memory metadata, it means the
+    ;; profile was generated in another process. Try to infer the collapsed
+    ;; stacks file from the name of the flamegraph file.
+    (let [fname (.getName flamegraph-file)
+          stacks-fname (str (second (re-find #"^(.+)-flamegraph\.html$" fname))
+                            "-collapsed.txt")
+          stacks (io/file (.getParent flamegraph-file) stacks-fname)]
+      (when (.exists stacks)
+        stacks))))
+
 (defn clear-results
   "Clear all results from /tmp/clj-async-profiler directory."
   []
