@@ -92,7 +92,7 @@ jobs:
 
 tags_filter: &tags_filter
   tags:
-    only: /^\d+\.\d+\.\d+/
+    only: /^\d+\.\d+\.\d+(-\w+)?/
 
 workflows:
   run_all:
