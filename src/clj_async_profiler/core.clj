@@ -1,38 +1,16 @@
 (ns clj-async-profiler.core
   (:require [clj-async-profiler.post-processing :as post-proc]
             [clj-async-profiler.render :as render]
+            [clj-async-profiler.results :as results]
             [clj-async-profiler.util :as util]
             [clojure.java.io :as io]
             [clojure.string :as str])
   (:import java.io.File
-           java.text.SimpleDateFormat
            java.util.Date))
 
 (defn- dbg-println [& more]
   (when (System/getProperty "clj-async-profiler.debug")
     (apply println "[clj-async-profiler]" more)))
-
-;;; Temp file machinery
-
-(defonce ^:private temp-directory
-  (let [output-dir  (or (System/getProperty "clj-async-profiler.output-dir") "/tmp")
-        root (io/file output-dir "clj-async-profiler")]
-    (.mkdirs (io/file root "results"))
-    (.mkdirs (io/file root "internal"))
-    root))
-
-(defonce ^:private ^SimpleDateFormat date-format
-  (SimpleDateFormat. "yyyy-MM-dd-HH-mm-ss"))
-
-(let [cnt (atom 0)]
-  (defn- tmp-internal-file [prefix extension]
-    (io/file temp-directory "internal"
-             (format "%s-%s_%s.%s" prefix (.format date-format (Date.))
-                     (swap! cnt inc) extension))))
-
-(defn- tmp-results-file [prefix extension]
-  (io/file temp-directory "results"
-           (format "%s-%s.%s" prefix (.format date-format (Date.)) extension)))
 
 ;;; Agent unpacking
 
@@ -45,7 +23,7 @@
   (re-find #"(?i)aarch64" (System/getProperty "os.arch")))
 
 (defn- unpack-from-jar [resource-name]
-  (let [path (io/file temp-directory resource-name)]
+  (let [path (io/file results/root-directory resource-name)]
     (when-not (.exists path)
       (if-let [resource (io/resource resource-name)]
         (io/copy (io/input-stream resource) path)
@@ -68,23 +46,8 @@
 
 ;;; Profiling
 
-;; Used to assign sequential IDs to profiler runs, so that just the ID instead
-;; of the full filename can be passed to regenerate flamegraphs or diffs.
-(defonce ^:private next-run-id (atom 0))
-(defonce ^:private run-id->stacks-file (atom {}))
-(defonce ^:private flamegraph-file->metadata (atom {}))
 (defonce ^:private default-options (atom {}))
 (defonce ^:private start-options (atom nil))
-
-(defn find-profile [run-id-or-stacks-file]
-  (if (number? run-id-or-stacks-file)
-    (@run-id->stacks-file run-id-or-stacks-file)
-    ;; When the file was passed directly, infer information from its name.
-    (let [^File f (io/file run-id-or-stacks-file)
-          [_ id event] (re-matches #"(\d+)-([^-]+)-.+" (.getName f))]
-      (when-not (.exists f)
-        (throw (ex-info (str "File " f " does not exist.") {})))
-      {:id (if id (Integer/parseInt id) -1), :stacks-file f, :event (keyword (or event :cpu))})))
 
 (defn- make-command-string
   [command {:keys [file event interval framebuf threads features]
@@ -128,7 +91,7 @@
   ([options]
    (let [options (merge @default-options options)
          pid (or (:pid options) (util/get-self-pid))
-         f (tmp-internal-file "list" "txt")
+         f (results/internal-file "list" "txt")
          _ (attach-agent pid (make-command-string "list" {:file f}))
          output (slurp f)
          event-types (->> (str/split-lines output)
@@ -145,7 +108,7 @@
   ([options]
    (let [options (merge @default-options options)
          pid (or (:pid options) (util/get-self-pid))
-         f (tmp-internal-file "status" "txt")]
+         f (results/internal-file "status" "txt")]
      (attach-agent pid (make-command-string "status" {:file f}))
      (slurp f))))
 
@@ -167,7 +130,7 @@
   ([options]
    (let [options (merge @default-options options)
          pid (or (:pid options) (util/get-self-pid))
-         f (tmp-internal-file "start" "txt")
+         f (results/internal-file "start" "txt")
          _ (attach-agent pid (make-command-string "start" (assoc options :file f)))
          msg (try (slurp f)
                   ;; On some platforms (seemingly, on M1), start file does not exist.
@@ -198,15 +161,17 @@
   %s"
   [run-id-or-stacks-file options]
   (let [options (merge @default-options options)
-        {:keys [id stacks-file event]} (find-profile run-id-or-stacks-file)
-        flamegraph-file (tmp-results-file (format "%02d-%s-flamegraph"
-                                                  id (name event)) "html")
+        {:keys [id stacks-file event]} (results/find-profile run-id-or-stacks-file)
+        flamegraph-file (results/results-file (:date options (Date.)) id event
+                                              "flamegraph" "html")
         compact-profile (post-proc/read-raw-profile-file-to-compact-profile
-                         stacks-file (get options :transform identity))]
+                         stacks-file (get options :transform identity))
+        options (update options :title #(or % (.getName ^File flamegraph-file)))]
     (spit flamegraph-file (render/render-html-flamegraph
                            compact-profile options false))
-    (swap! flamegraph-file->metadata assoc flamegraph-file
-           {:samples (:total-samples (meta compact-profile))})
+    (swap! results/file->metadata assoc flamegraph-file
+           {:stacks-file stacks-file
+            :samples (:total-samples (meta compact-profile))})
     flamegraph-file))
 (alter-meta! #'generate-flamegraph update :doc format stop-options-docstring)
 
@@ -217,18 +182,20 @@
   %s"
   [profile-before profile-after options]
   (let [options (merge @default-options options)
-        {id1 :id, stack1 :stacks-file, ev1 :event} (find-profile profile-before)
-        {id2 :id, stack2 :stacks-file, ev2 :event} (find-profile profile-after)
+        {id1 :id, stacks1 :stacks-file, ev1 :event} (results/find-profile profile-before)
+        {id2 :id, stacks2 :stacks-file, ev2 :event, date :date} (results/find-profile profile-after)
         _ (when-not (= ev1 ev2)
             (throw (ex-info "Profiler runs must be of the same event type."
                             {:before ev1, :after ev2})))
         diff-profile (post-proc/generate-compact-diff-profile
-                      stack1 stack2 (get options :transform identity))
-        diffgraph-file (tmp-results-file
-                        (format "%02d_%02d-%s-diff" id1 id2 (name ev1)) "html")
-        title (str (.getName ^File stack1) " vs " (.getName ^File stack2))]
-    (spit diffgraph-file (render/render-html-flamegraph
-                          diff-profile (assoc options :title title) true))
+                      stacks1 stacks2 (get options :transform identity))
+        diffgraph-file (results/results-file (or date (Date.)) 0 ev1
+                                             "diffgraph" "html")
+        title (str (.getName ^File stacks1) " vs " (.getName ^File stacks2))
+        options (update options :title #(or % title))]
+    (spit diffgraph-file (render/render-html-flamegraph diff-profile options true))
+    (swap! results/file->metadata assoc diffgraph-file
+           {:id1 id1, :id2 id2, :stacks1 stacks1, :stacks2 stacks2, :event ev1})
     diffgraph-file))
 (alter-meta! #'generate-diffgraph update :doc format stop-options-docstring)
 
@@ -248,16 +215,14 @@
          ^String status-msg (status options)
          _ (when-not (.contains status-msg "is running")
              (throw (ex-info status-msg {})))
-         run-id (swap! next-run-id inc)
-         ;; Theoretically, we can extract the profiler event from status, but
-         ;; for now it always returns "wall", so we have to rely on options.
+         run-id (swap! results/next-run-id inc)
          event (:event @start-options :cpu)
-         ;; Capitalize event so that it's always above "flamegraph" in the list.
-         f (tmp-results-file (format "%02d-%s" run-id (name event)) "txt")]
+         now (Date.)
+         f (results/results-file now run-id event "collapsed" "txt")]
      (attach-agent pid (make-command-string "stop" {:file f}))
-     (swap! run-id->stacks-file assoc run-id {:id run-id, :stacks-file f, :event event})
+     (results/associate-id-to-file run-id f event)
      (if (:generate-flamegraph? options true)
-       (generate-flamegraph run-id options)
+       (generate-flamegraph run-id (assoc options :date now))
        f))))
 (alter-meta! #'stop update :doc format stop-options-docstring)
 
@@ -302,20 +267,14 @@
   ([host port]
    (require 'clj-async-profiler.ui)
    ((resolve 'clj-async-profiler.ui/start-server) host port
-    (io/file temp-directory "results"))))
+    (io/file results/root-directory "results"))))
 
 #_(serve-ui 8080)
 
 (defn clear-results
   "Clear all results from /tmp/clj-async-profiler directory."
   []
-  (doseq [f (.listFiles (io/file temp-directory "results"))]
-    (.delete ^java.io.File f))
-  (doseq [f (.listFiles (io/file temp-directory "internal"))]
-    (.delete ^java.io.File f))
-  (reset! next-run-id 0)
-  (reset! run-id->stacks-file {})
-  (reset! flamegraph-file->metadata {}))
+  (results/clear-results))
 
 (defn set-default-profiling-options
   "Set the map of default options that will be used for all subsequent profiling
@@ -333,8 +292,8 @@
   [options]
   (let [event (:event options :cpu)
         agent-path (async-profiler-agent)
-        run-id (swap! next-run-id inc)
-        f (tmp-results-file (format "%02d-startup-%s" run-id (name event)) "txt")
+        run-id (swap! results/next-run-id inc)
+        f (results/results-file (Date.) run-id event "collapsed" "txt")
         cmd-string (make-command-string "start" (assoc options :file f))
         full-opt (format "-agentpath:%s=%s" agent-path cmd-string)]
     (println
