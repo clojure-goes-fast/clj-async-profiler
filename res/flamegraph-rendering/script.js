@@ -682,11 +682,11 @@ function canvasOnMouseMove(e) {
         tooltip_x = cursor_x - tooltip_w;
       }
 
-      if (cursor_y + tooltip_h + 20 > canvas.clientHeight) {
+      if (e.clientY + tooltip_h + 20 > window.innerHeight - statusBox.clientHeight) {
         tooltip_y = cursor_y - tooltip_h;
       }
 
-      console.log("cursor_x", cursor_x, "clientWidth", canvas.clientWidth, "tooltip_w", tooltip_w, "tooltip_h", tooltip_h, "tooltip_x", tooltip_x);
+      // console.log("e.clientY", e.clientY, "cursor_y", cursor_y, "window.innerHeight", window.innerHeight, "tooltip_h", tooltip_h, "tooltip_y", tooltip_y);
 
       tooltip.style.left = tooltip_x;
       tooltip.style.top = tooltip_y;

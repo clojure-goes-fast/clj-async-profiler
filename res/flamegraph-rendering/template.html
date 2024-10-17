@@ -17,7 +17,7 @@
       #tooltip .statdiv {display:flex; justify-content:space-around;}
       #tooltipRightClickHint {font-size:9px; width:100%; display:flex; justify-content:center;}
       @keyframes fadeIn { 99% { visibility:hidden; } 100% { visibility:visible; }}
-      .statusBox {background-color:#ffffe6; position:fixed; left:0; bottom:0; width:100%;
+      #statusBox {background-color:#ffffe6; position:fixed; left:0; bottom:0; width:100%;
                   box-sizing: border-box; padding:5px 1em; display:inline-flex;
                   justify-content:space-between;}
       #hoverTip {overflow: hidden; white-space: nowrap}
@@ -117,7 +117,7 @@
             </div>
             <div id="tooltipRightClickHint"><span><i>Right click for options</i></span></div>
           </div>
-          <div class='statusBox'>
+          <div id='statusBox'>
             <span id="spinner"></span>
             <span id='hoverTip'></span>
             <span id='matchContainer'>Matched: <span id='matchedLabel'></span></span>
