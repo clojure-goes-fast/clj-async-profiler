@@ -2,15 +2,12 @@
   <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
     <link rel='icon' href='favicon.png' type='image/x-icon'/>
     <title>clj-async-profiler</title>
     <style>
       body {margin:1em auto; max-width:800px; background-color:#f9f9f9;}
       img {margin:5px}
-      body, table, input, select {color:#474747; font:0.9em/1.5 Inter, sans-serif;}
+      body, table, input, select {color:#474747; font:0.9em/1.5 Verdana, sans-serif;}
       table, input, select {background-color:white;}
       tbody tr td {border-bottom:1px solid #ededed;}
       tbody tr:last-child td {border-bottom: none;}
@@ -21,23 +18,26 @@
       thead tr.heading {background-color:white;}
       tr.heading td {padding: 1px 10px; font-weight:500; color:black;}
       tr.heading {background-color:#F5F5F5}
-      tr.data td {height:40px}
+      tr.data td {height:35px}
       table th:first-child {border-radius:12px 0 0 0;}
       table th:last-child {border-radius:0 12px 0 0;}
-      th:nth-child(1), td:nth-child(1) {/* max-width:15%; width:15%;  */text-align:right;}
-      /* th:nth-child(2), td:nth-child(2) {max-width:5%; width:5%;} */
-      /* th:nth-child(6), td:nth-child(6) {max-width:10%; width:10%;} */
+      th:nth-child(1), td:nth-child(1) {text-align:right;}
+      th:nth-child(7), td:nth-child(7) {max-width:15%; width:15%; text-align:center;}
       a {text-decoration:none;}
       table {border-collapse: separate; width:100%; box-shadow: 0 8px 10px 0 rgba(0,0,0,0.2);
-             border-spacing: 0;  border-radius: 10px; border: 1px solid #ededed;
-            }
+             border-spacing: 0;  border-radius: 10px; border: 1px solid #ededed;}
       .header {justify-content:space-between; margin-bottom:2em;}
       .flex-center {display:flex; align-items:center;}
       .controls {display:flex; justify-content:center; width:100%;}
-      input[type=submit] {border: none; padding: 4px 10px; border-radius: 4px;
-                          box-shadow: 2px 2px 3px 0px rgba(0, 0, 0, 0.2);}
-      select {border: 1px solid #878787; border-radius: 4px; accent-color: green;
-              padding: 2px;}
+      input[type=submit] {box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.25);}
+      input[type=submit] {background-color:#e2e2e2;
+                          border: none; padding: 4px 10px; border-radius: 4px;
+                          box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.25);}
+      select#event {border: 1px solid #878787; border-radius: 4px; accent-color: green;
+                    padding: 2px; min-width: 100px;}
+      button.diff {background-color:inherit; color:inherit; border: 1px solid #8e8e8e;
+                   border-radius:4px; font-size: 0.8em; padding: 2px 6px;}
+      button.diff.cancel {background-color:#ffa5a5;}
     </style>
   </head>
   <body>

@@ -18,12 +18,13 @@
 (defn- profiler-controls []
   (let [^String status-msg (core/status)]
     (if (.contains status-msg "is running")
-      (format "<form action=\"/stop-profiler\">[%s] profiling is running&nbsp;
-               <input type=\"submit\" value=\"Stop profiler\"/></form>"
+      (format "<form action='/stop-profiler'>[%s] profiling is running&nbsp;
+               <input type='submit' value='Stop profiler'/></form>"
               (name (@@#'core/start-options :event :cpu)))
-      (format "<form action=\"/start-profiler\">Event:&nbsp;
-               <select name=\"event\">%s</select>&nbsp;
-               <input type=\"submit\" value=\"Start profiler\"/></form>"
+      (format "<form action='/start-profiler'>
+               <label for='event'>Event:</label>&nbsp;
+               <select id='event' name='event'>%s</select>&nbsp;
+               <input type='submit' value='Start profiler'/></form>"
               (forj [ev (remove #{:ClassName.methodName}
                                 (core/list-event-types {:silent? true}))]
                 (format "<option value=%s>%s</option>" (name ev) (name ev)))))))
@@ -46,16 +47,21 @@
 (defn- format-size [sz samples]
   (let [sz (if (< sz 1024) (str sz " b") (format "%.1f Kb" (/ sz 1024.0)))
         samples (cond (nil? samples) nil
-                      (< samples 1000) (str "<br>" samples " samples")
-                      :else (format "<br>%.1fk samples" (/ samples 1e3)))]
-    (cond-> sz samples (str samples))))
+                      (< samples 1000) (str samples " samples")
+                      :else (format "%.1fk samples" (/ samples 1e3)))]
+    (or samples sz)))
+
+(defn- resolve-stacks-file [short-name]
+  (when-let [^File f (some->> short-name (io/file results/root-directory "results"))]
+    (when (.exists f) f)))
 
 (defn- file-table [root files]
   (let [files (sort-by #(.lastModified ^File %) > files) ;; Newer on top
         parsed-files (for [^File f files
                            :let [info (results/parse-results-filename (.getName f))]]
                        [f (update info :date #(or % (Date. (.lastModified f))))])
-        grouped (group-by #(date->local-date (:date (second %))) parsed-files)]
+        grouped (group-by #(date->local-date (:date (second %))) parsed-files)
+        diff-from-file (resolve-stacks-file (@ui-state :diff-from))]
     (format
      "<table><thead>%s</thead><tbody>%s</tbody></table>"
      (row :th "heading"
@@ -86,7 +92,20 @@
                                      id2)
                          stacks (format "<a href='%s'>raw</a>"
                                         (str root (.getName stacks))))
-                   "")))))))
+                   (if diff-from-file
+                     (cond (= diff-from-file stacks)
+                           "<button class='diff cancel' onclick=\"window.location.href='/cancel-diff'\">Cancel</button>"
+                           stacks
+                           (format "<button class='diff' onclick=\"window.location.href='/finish-diff?to=%s'\">...to this</button>"
+                                   (.getName stacks)))
+                     (when stacks
+                       (format "<button class='diff' onclick=\"window.location.href='/start-diff?from=%s'\">Diff to...</button>"
+                               (.getName stacks)))))))))))
+
+(defn- generate-diff [to-file-short-name]
+  (let [from-file (resolve-stacks-file (@ui-state :diff-from))
+        to-file (resolve-stacks-file to-file-short-name)]
+    (core/generate-diffgraph from-file to-file {})))
 
 (defn- main-page [root files]
   (->> {:profiler-controls (profiler-controls)
@@ -110,8 +129,22 @@
             (do (core/clear-results)
                 (redirect "/"))
 
+            (= path "/start-diff")
+            (do (swap! ui-state assoc :diff-from (params "from"))
+                (redirect "/"))
+
+            (= path "/finish-diff")
+            (do (generate-diff (params "to"))
+                (swap! ui-state dissoc :diff-from)
+                (redirect "/"))
+
+            (= path "/cancel-diff")
+            (do (swap! ui-state dissoc :diff-from)
+                (redirect "/"))
+
             (= path "/")
-            {:body (main-page path files)}
+            (let [files (filter #(= (wwws/get-extension (str %)) "html") files)]
+              {:body (main-page path files)})
 
             (= path "/favicon.png")
             {:body (io/resource "favicon.png")
