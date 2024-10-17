@@ -3,6 +3,7 @@
 ### master (unreleased)
 
 - New index page design.
+- Try to prevent horizontal scrollbar appearing on flamegraph.
 
 ### 1.3.3 (2024-10-04)
 

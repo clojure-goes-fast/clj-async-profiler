@@ -18,14 +18,15 @@ if (qString.get('sidebar') == 'expanded') {
 }
 
 function updateSidebarState() {
+  let availableWidth = Math.min(window.innerWidth, document.documentElement.clientWidth);
   if (sidebarVisible) {
     sidebar.style.display = 'block';
     smallbar.style.display = 'none';
-    canvasWidth = window.innerWidth - sidebarWidth;
+    canvasWidth = availableWidth - sidebarWidth;
   } else {
     sidebar.style.display = 'none';
     smallbar.style.display = 'block';
-    canvasWidth = window.innerWidth;
+    canvasWidth = availableWidth;
   }
   canvasWidth -= 20; // Reduce by the padding of .graphCol
 }
@@ -445,6 +446,12 @@ function reinitCanvas() {
   canvas.onmousemove = canvasOnMouseMove;
   canvas.onmouseout = canvasOnMouseOut;
   c.font = document.body.style.font;
+  if (window.innerWidth < canvasWidth) {
+    // This is probably caused by vertical scrollbar appearing when it wasn't
+    // there before. Force a recompute of canvasWidth and reinit canvas again.
+    updateSidebarState(); // This recomputes canvasWidth
+    reinitCanvas();
+  }
 }
 
 var highlightState = {
