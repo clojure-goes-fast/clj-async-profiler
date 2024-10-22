@@ -1,9 +1,11 @@
 # Changelog
 
-### master (unreleased)
+### 1.4.0 (2024-10-22)
 
 - New index page design.
+- Add diffgraph generation buttons to the web UI.
 - Try to prevent horizontal scrollbar appearing on flamegraph.
+- Fix tooltip getting clipped at the bottom of the screen.
 
 ### 1.3.3 (2024-10-04)
 
