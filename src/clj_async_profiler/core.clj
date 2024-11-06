@@ -164,14 +164,14 @@
         {:keys [id stacks-file event]} (results/find-profile run-id-or-stacks-file)
         flamegraph-file (results/results-file (:date options (Date.)) id event
                                               "flamegraph" "html")
-        compact-profile (post-proc/read-raw-profile-file-to-compact-profile
-                         stacks-file (get options :transform identity))
+        dense-profile (post-proc/read-raw-profile-file-to-dense-profile
+                       stacks-file (get options :transform identity))
         options (update options :title #(or % (.getName ^File flamegraph-file)))]
     (spit flamegraph-file (render/render-html-flamegraph
-                           compact-profile options false))
+                           dense-profile options false))
     (swap! results/file->metadata assoc flamegraph-file
            {:stacks-file stacks-file
-            :samples (:total-samples (meta compact-profile))})
+            :samples (:total-samples (meta dense-profile))})
     flamegraph-file))
 (alter-meta! #'generate-flamegraph update :doc format stop-options-docstring)
 
@@ -187,7 +187,7 @@
         _ (when-not (= ev1 ev2)
             (throw (ex-info "Profiler runs must be of the same event type."
                             {:before ev1, :after ev2})))
-        diff-profile (post-proc/generate-compact-diff-profile
+        diff-profile (post-proc/generate-dense-diff-profile
                       stacks1 stacks2 (get options :transform identity))
         diffgraph-file (results/results-file (or date (Date.)) 0 ev1
                                              "diffgraph" "html")

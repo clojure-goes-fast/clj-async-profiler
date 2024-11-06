@@ -81,8 +81,8 @@
       (.append sb ");\n"))
     (str sb)))
 
-(defn render-html-flamegraph [compact-profile options diffgraph?]
-  (let [{:keys [stacks id->frame]} compact-profile
+(defn render-html-flamegraph [dense-profile options diffgraph?]
+  (let [{:keys [stacks id->frame]} dense-profile
         idToFrame (print-id-to-frame id->frame)
         data (print-add-stacks stacks diffgraph?)
         user-transforms (render-predefined-transforms

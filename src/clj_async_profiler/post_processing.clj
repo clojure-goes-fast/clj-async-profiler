@@ -52,8 +52,8 @@
           (do (.add l (.substring s last-idx idx))
               (recur (inc idx))))))))
 
-(defn raw-profile->compact-profile
-  "Transform a split profile into a \"compact profile\" structure which reuses
+(defn raw-profile->dense-profile
+  "Transform a split profile into a \"dense profile\" structure which reuses
   stack frame strings and thus occupies much less space when serialized."
   [^HashMap raw-profile, count-total-samples?]
   (let [frame->id-map (HashMap.)
@@ -78,8 +78,8 @@
                                     (mapv frame->id))
                          value (.getValue ^HashMap$Node entry)
                          same (count-same stack (aget last-stack 0))
-                         compact-stack (into [same] (drop same stack))]
-                     (.add acc [compact-stack value])
+                         dense-stack (into [same] (drop same stack))]
+                     (.add acc [dense-stack value])
                      (aset last-stack 0 stack)
                      (when count-total-samples?
                        (aset total-samples 0 (+ (aget total-samples 0) ^long value))))))))
@@ -89,10 +89,10 @@
              :id->frame (vec id->frame-arr)}
       count-total-samples? (with-meta {:total-samples (aget total-samples 0)}))))
 
-(defn read-raw-profile-file-to-compact-profile
-  ([file] (read-raw-profile-file-to-compact-profile file identity))
+(defn read-raw-profile-file-to-dense-profile
+  ([file] (read-raw-profile-file-to-dense-profile file identity))
   ([file transform]
-   (raw-profile->compact-profile (read-raw-profile-file file transform) true)))
+   (raw-profile->dense-profile (read-raw-profile-file file transform) true)))
 
 
 ;;;; Diff-related code
@@ -118,11 +118,11 @@
           profile2)
     res))
 
-(defn generate-compact-diff-profile
+(defn generate-dense-diff-profile
   [raw-profile-file1 raw-profile-file2 transform]
   (let [raw-profile1 (read-raw-profile-file raw-profile-file1
                                             (comp transform remove-lambda-ids))
         raw-profile2 (read-raw-profile-file raw-profile-file2
                                             (comp transform remove-lambda-ids))]
-    (raw-profile->compact-profile
+    (raw-profile->dense-profile
      (merge-two-profiles raw-profile1 raw-profile2) false)))
