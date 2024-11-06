@@ -87,7 +87,7 @@
     (run! (fn [[k v]] (aset id->frame-arr v k)) frame->id-map)
     (cond-> {:stacks (vec acc)
              :id->frame (vec id->frame-arr)}
-      count-total-samples? (with-meta {:total-samples (aget total-samples 0)}))))
+      count-total-samples? (assoc :total-samples (aget total-samples 0)))))
 
 (defn read-raw-profile-file-to-dense-profile
   ([file] (read-raw-profile-file-to-dense-profile file identity))

@@ -171,7 +171,7 @@
                            dense-profile options false))
     (swap! results/file->metadata assoc flamegraph-file
            {:stacks-file stacks-file
-            :samples (:total-samples (meta dense-profile))})
+            :samples (:total-samples dense-profile)})
     flamegraph-file))
 (alter-meta! #'generate-flamegraph update :doc format stop-options-docstring)
 
