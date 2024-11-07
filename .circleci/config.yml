@@ -64,14 +64,17 @@ jobs:
     parameters:
       jdk_version:
         type: string
-      is-alpine:
+      is_alpine:
+        type: boolean
+        default: false
+      test_flamebin:
         type: boolean
         default: false
     executor: << parameters.jdk_version >>
     steps:
       - checkout
       - when:
-          condition: << parameters.is-alpine >>
+          condition: << parameters.is_alpine >>
           steps:
             - run: apk add --no-cache libstdc++
       - with_cache:
@@ -80,7 +83,7 @@ jobs:
             - run: clojure -T:build javac
             - run: CLOJURE_VERSION=1.10 clojure -X:1.10:test
             - run: CLOJURE_VERSION=1.11 clojure -X:1.11:test
-            - run: CLOJURE_VERSION=1.12 clojure -X:1.12:test
+            - run: CLOJURE_VERSION=1.12 TEST_FLAMEBIN=<< parameters.test_flamebin >> clojure -X:1.12:test
 
   deploy:
     executor: jdk8
@@ -90,9 +93,12 @@ jobs:
          name: Deploy
          command: clojure -T:build deploy :version \"$CIRCLE_TAG\"
 
-tags_filter: &tags_filter
-  tags:
-    only: /^\d+\.\d+\.\d+(-\w+)?/
+run_always: &run_always
+  filters:
+    branches:
+      only: /.*/
+    tags:
+      only: /.*/
 
 workflows:
   run_all:
@@ -100,26 +106,29 @@ workflows:
       - test:
           matrix:
             parameters:
-              jdk_version: [jdk8, jdk11, jdk17, jdk21, jdk23]
-          filters:
-            branches:
-              only: /.*/
-            <<: *tags_filter
+              jdk_version: [jdk8, jdk11, jdk17, jdk21]
+          <<: *run_always
       - test:
           matrix:
             alias: "test-alpine"
             parameters:
               jdk_version: [jdk8-alpine, jdk21-alpine]
-              is-alpine: [true]
-          filters:
-            branches:
-              only: /.*/
-            <<: *tags_filter
+              is_alpine: [true]
+          <<: *run_always
+      - test:
+          matrix:
+            alias: "test-with-flamebin"
+            parameters:
+              jdk_version: [jdk23]
+              test_flamebin: [true]
+          <<: *run_always
       - deploy:
           requires:
             - test
             - test-alpine
+            - test-with-flamebin
           filters:
             branches:
               ignore: /.*/
-            <<: *tags_filter
+            tags:
+              only: /^\d+\.\d+\.\d+(-\w+)?/
