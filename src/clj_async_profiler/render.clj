@@ -1,6 +1,9 @@
 (ns clj-async-profiler.render
   (:require [clojure.java.io :as io]
-            [clojure.string :as str]))
+            [clojure.string :as str])
+  (:import java.io.ByteArrayOutputStream
+           java.util.regex.Pattern
+           java.util.zip.GZIPOutputStream))
 
 ;;;; Minimal probably-incorrect templating engine in the name of 0-deps gods.
 
@@ -29,31 +32,45 @@
 #_(render-template "<<<a>>>regular text <<<b>>> and then also<<<c>>>"
                    {:a 1, :b "two", :c []})
 
+;;;; JSON-GZIP-BASE64 encoding for serializing config
+
+(defn- edn->json
+  "Implements a very crude \"json\" serializer. Don't use it for anything else!"
+  [config]
+  (letfn [(->json [obj]
+            (cond (map? obj) (str "{" (->> obj
+                                           (map (fn [[k v]]
+                                                  (str (->json k) ":" (->json v))))
+                                           (str/join ","))
+                                  "}")
+                  (sequential? obj) (str "[" (str/join "," (map ->json obj)) "]")
+                  (instance? Pattern obj) (->json (str "/" (str/replace obj "/" "\\/") "/"))
+                  (keyword? obj) (pr-str (name obj))
+                  (string? obj) (pr-str obj)
+                  (nil? obj) "null"
+                  :else (str obj)))]
+    (->json config)))
+
+#_(edn->json {:transforms [{:type :replace, :what #"abc.+" :number 42}]})
+
+(defn- gzip-string [^String s]
+  (let [baos (java.io.ByteArrayOutputStream.)]
+    (with-open [zip (GZIPOutputStream. baos)]
+      (io/copy (.getBytes s) zip))
+    (.toByteArray baos)))
+
+(defn- base64 [bytes]
+  (.encodeToString (java.util.Base64/getUrlEncoder) bytes))
+
 ;;;; Flamegraph rendering
 
-(defn- validate-predefined-transform [transform]
+(defn- validate-transform [transform]
   (assert (#{:filter :remove :replace} (:type transform)))
   (assert (contains? #{nil true false} (:enabled transform)))
   (assert (or (string? (:what transform))
               (instance? java.util.regex.Pattern (:what transform))))
   (assert (or (not (= (:type transform) :replace))
               (string? (:replacement transform)))))
-
-(defn- render-predefined-transforms [predefined-transforms]
-  (if predefined-transforms
-    (->> (map (fn [{:keys [type enabled what replacement] :as t
-                    :or {enabled true}}]
-                (validate-predefined-transform t)
-                (format "_makeTransform('%s', %s, %s, %s)"
-                        (name type) enabled
-                        (if (string? what)
-                          (str "\"" what "\"")
-                          (str "/" (str/replace what "/" "\\/") "/g"))
-                        (if replacement
-                          (format "'%s'" replacement) "null")))
-              predefined-transforms)
-         (str/join ",\n"))
-    ""))
 
 (defn- print-id-to-frame [id->frame]
   (let [sb (StringBuilder.)]
@@ -85,14 +102,15 @@
   (let [{:keys [stacks id->frame]} dense-profile
         idToFrame (print-id-to-frame id->frame)
         data (print-add-stacks stacks diffgraph?)
-        user-transforms (render-predefined-transforms
-                         (:predefined-transforms options))
-
+        config (merge {:transforms (:predefined-transforms options)} ; deprecated
+                      (:config options))
+        _ (run! validate-transform (:transforms config))
+        packed-config (base64 (gzip-string (edn->json config)))
         full-js (-> (slurp (io/resource "flamegraph-rendering/script.js"))
                     (render-template
                      {:graphTitle     (pr-str (or (:title options) ""))
                       :isDiffgraph    (str (boolean diffgraph?))
-                      :userTransforms user-transforms
+                      :config         (str "\"" packed-config "\"")
                       :idToFrame      idToFrame
                       :stacks         data}))]
     (-> (slurp (io/resource "flamegraph-rendering/template.html"))

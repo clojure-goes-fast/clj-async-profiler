@@ -9,6 +9,37 @@ const sidebarWidth = sidebar.offsetWidth; // Remember while sidebar is visible.
 const qString = new URLSearchParams(window.location.search)
 const transformFilterTemplate = document.getElementById('transformFilterTemplate');
 const transformReplaceTemplate = document.getElementById('transformReplaceTemplate');
+const minSamplesToShow = 0; // Don't hide any frames for now.
+
+/// Config handling
+
+const bakedPackedConfig = <<<config>>>;
+const queryPackedConfig = qString.get('config');
+
+async function gunzipBase64(inputString) {
+  // We use url-encoded base64, convert it to regular base64 first.
+  const base64 = inputString
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++)
+    bytes[i] = binaryString.charCodeAt(i);
+
+  const stream = new Blob([bytes]).stream()
+        .pipeThrough(new DecompressionStream('gzip'));
+  return await new Response(stream).text();
+}
+
+async function unpackConfig(packedConfigString) {
+  try {
+    var json = JSON.parse(await gunzipBase64(packedConfigString));
+    console.log("[clj-async-profiler] Unpacked config", packedConfigString, json);
+    return json;
+  } catch (error) {
+    console.error('[clj-async-profiler] Error unpacking config', packedConfigString, error);
+  }
+}
 
 var sidebarVisible = false;
 var canvasWidth, canvasHeight;
@@ -38,9 +69,10 @@ var isDiffgraph = <<<isDiffgraph>>>;
 var b_scale_factor;
 var reverseGraph = false;
 var initialStacks = [];
-var stacks;
+var stacks, tree, levels, depth;
 // idToFrame gets defined at the end of the file
 var _lastInsertedStack = null;
+var userTransforms = [];
 
 var maxTooltipWidth = 250;
 if (isDiffgraph) {
@@ -101,7 +133,7 @@ function _stringToMaybeRegex(s) {
 }
 
 function _makeTransform(type, enabled, what, replacement) {
-  let what2 = (typeof(what) == 'string') ? _stringToMaybeRegex(what) : what;
+  let what2 = _stringToMaybeRegex(what);
   let what2Str = what2.toString();
   let prefix = (what2 instanceof RegExp) ?
       _extractRegexPrefix(what2Str) : null;
@@ -111,7 +143,19 @@ function _makeTransform(type, enabled, what, replacement) {
     return { type: type, enabled: enabled, what: what2}
 }
 
-var userTransforms = [<<<userTransforms>>>];
+function applyConfig(config) {
+  if (config.highlight) applyHighlight(config.highlight, true);
+  if (config.reverse) setReverseGraph(true);
+  if (config['sort-by'] == 'name') sortByNameRadio.checked = true;
+  if (config.transforms) {
+    userTransforms = [];
+    for (let configTransform of config.transforms) {
+      let t = _makeTransform(configTransform.type, configTransform.enabled != false,
+                             configTransform.what, configTransform.replacement);
+      userTransforms.push(t);
+    }
+  }
+}
 
 function match(string, obj) {
   if (typeof(obj) == 'string') {
@@ -169,7 +213,10 @@ function transformStacks() {
         if (!useIt) break;
       }
 
-      xformedStr = xformedStr.substring(1,xformedStr.length-1);
+      let len = xformedStr.length;
+      let cut_from = (xformedStr.charAt(0) == ';') ? 1 : 0;
+      let cut_to = (xformedStr.charAt(len-1) == ';') ? len-1 : len;
+      xformedStr = xformedStr.substring(cut_from, cut_to);
 
       if (useIt)
         if (diff) {
@@ -349,8 +396,6 @@ function getDiffColor(value) {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
-var stacks, tree, levels, depth, minSamplesToShow = 0;
-
 function generateLevelsSimple(levels, node, title, level, x) {
   var left = x;
 
@@ -458,10 +503,11 @@ var highlightState = {
   pattern: null, lastPatternAsText: null
 }
 
-var highlightPattern = null, currentRootFrame, currentRootLevel, currentFrameUnderCursor, currentLevelUnderCursor, px;
-var totalRenderedFrames = 0;
+var currentRootFrame, currentRootLevel, currentFrameUnderCursor, currentLevelUnderCursor, px;
 
-function applyHighlight(stringOrRegex) {
+function applyHighlight(stringOrRegex, doSetInput) {
+  if (doSetInput)
+    highlightInput.value = stringOrRegex;
   let newPattern = _stringToMaybeRegex(stringOrRegex);
   highlightState.pattern = newPattern;
   highlightState.lastPatternAsText = stringOrRegex;
@@ -822,8 +868,7 @@ function smallbarHighlightButtonOnClick() {
   if (highlightState.pattern == null) {
     let userInput = window.prompt("Search string or /regex/", highlightState.lastPatternAsText || "");
     if (userInput != null && userInput != "") {
-      highlightInput.value = userInput;
-      applyHighlight(userInput);
+      applyHighlight(userInput, true);
     }
   } else {
     clearHighlight();
@@ -863,8 +908,8 @@ function scrollToTopOrBottom() {
   window.scrollTo(0, reverseGraph ? 0 : document.body.scrollHeight);
 }
 
-function inverseOnClick() {
-  reverseGraph = !reverseGraph;
+function setReverseGraph(newReverse) {
+  reverseGraph = newReverse;
   if (reverseGraph) {
     inverseButton1.classList.add("toggled");
     inverseButton2.classList.add("toggled");
@@ -872,6 +917,10 @@ function inverseOnClick() {
     inverseButton1.classList.remove("toggled");
     inverseButton2.classList.remove("toggled");
   }
+}
+
+function inverseOnClick() {
+  setReverseGraph(!reverseGraph);
   performSlowAction(function() { fullRedraw(true); });
 }
 
@@ -1020,8 +1069,7 @@ function escapeRegex(regexString) {
 
 function menuHighlight(e, frame) {
   let rx = escapeRegex(frame.title);
-  highlightInput.value = "/^" + rx + "$/";
-  applyHighlight(highlightInput.value);
+  applyHighlight("/^" + rx + "$/", true);
 }
 
 function menuCopyAsText(e, frame) {
@@ -1094,7 +1142,12 @@ var idToFrame = [<<<idToFrame>>>];
 
 console.timeEnd("[clj-async-profiler] Data load/eval");
 
-performSlowAction(function() {
+performSlowAction(async function() {
+  if (queryPackedConfig != null)
+    applyConfig(await unpackConfig(queryPackedConfig));
+  else if (bakedPackedConfig != null)
+    applyConfig(await unpackConfig(bakedPackedConfig));
+
   redrawTransformsSection();
   fullRedraw(true);
   sidebar.style.visibility = 'visible';

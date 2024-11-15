@@ -143,15 +143,17 @@
 
 (def ^:private stop-options-docstring
   ":title - title of the generated flamegraph (optional)
-  :predefined-transforms - a list of maps that specify the dynamic transforms to
-                           bake into the flamegraph. For example:
+  :config - a map to preconfigure the flamegraph. E.g.:
 
   ...
-  :predefined-transforms [{:type :remove
-                           :what \"frame_buffer_overflow\"}
-                          {:type :replace
-                           :what #\"(;manifold.deferred[^;]+)+\"
-                           :replacement \";manifold.deferred/...\"}
+  :config {:transforms [{:type :remove
+                         :what \"frame_buffer_overflow\"}
+                        {:type :replace
+                         :what #\"(;manifold.deferred[^;]+)+\"
+                         :replacement \";manifold.deferred/...\"}]
+           :highlight \"Reflector\"
+           :reverse true
+           :sort-by :name}
   ...")
 
 (defn generate-flamegraph
