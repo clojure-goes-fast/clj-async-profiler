@@ -110,6 +110,10 @@ tooltip.style['max-width'] = maxTooltipWidth + 'px';
 graphTitleSpan.innerText = graphTitle;
 graphTitleSpan.title = graphTitle;
 
+if (window.location.protocol == 'file:') {
+  saveConfigButton.remove();
+}
+
 function a(frameIds, samples) {
   var same = frameIds[0];
   var frames = (same > 0) ? _lastInsertedStack.slice(0,same) : [];
@@ -187,8 +191,7 @@ function applyConfig(config) {
   }
 }
 
-async function copyConfigToClipboard() {
-  // Construct a config instance
+async function constructPackedConfig() {
   let config = {}
   if (highlightState.pattern) config.highlight = _maybeRegexToString(highlightState.pattern);
   if (reverseGraph) config.reverse = true;
@@ -203,7 +206,11 @@ async function copyConfigToClipboard() {
   }
   config.transforms = transformsData;
 
-  navigator.clipboard.writeText(await packConfig(config));
+  return packConfig(config);
+}
+
+async function copyConfigToClipboard() {
+  navigator.clipboard.writeText(await constructPackedConfig());
 }
 
 async function pasteConfigFromClipboard() {
@@ -211,6 +218,14 @@ async function pasteConfigFromClipboard() {
   applyConfig(await unpackConfig(text));
   redrawTransformsSection();
   fullRedraw(true);
+}
+
+async function saveConfigToServer() {
+  let packedConfig = await constructPackedConfig();
+  let req = new XMLHttpRequest();
+  req.open("POST", "/save-config?packed-config=" + packedConfig);
+  console.log("[clj-async-profiler] Sending save-config request to backend:", req);
+  req.send();
 }
 
 function match(string, obj) {

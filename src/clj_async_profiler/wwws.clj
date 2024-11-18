@@ -103,3 +103,5 @@
 (defn respond
   ([body] {:body body})
   ([code body] {:status code, :body body}))
+
+(def no-content {:status 204})

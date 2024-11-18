@@ -1,6 +1,6 @@
 (ns clj-async-profiler.ui
   (:require [clj-async-profiler.core :as core]
-            [clj-async-profiler.wwws :as wwws :refer [redirect respond]]
+            [clj-async-profiler.wwws :as wwws :refer [redirect respond no-content]]
             [clj-async-profiler.render :as render]
             [clj-async-profiler.results :as results]
             [clojure.java.io :as io]
@@ -141,6 +141,10 @@
             (= path "/cancel-diff")
             (do (swap! ui-state dissoc :diff-from)
                 (redirect "/"))
+
+            (= path "/save-config")
+            (do (swap! @#'core/default-options assoc :saved-packed-config (params "packed-config"))
+                no-content)
 
             (= path "/")
             (let [files (filter #(= (wwws/get-extension (str %)) "html") files)]

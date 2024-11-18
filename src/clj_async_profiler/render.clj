@@ -105,7 +105,10 @@
         config (merge {:transforms (:predefined-transforms options)} ; deprecated
                       (:config options))
         _ (run! validate-transform (:transforms config))
-        packed-config (base64 (gzip-string (edn->json config)))
+        packed-config (or
+                       ;; Config saved from flamegraph takes the priorioty.
+                       (:saved-packed-config options)
+                       (base64 (gzip-string (edn->json config))))
         full-js (-> (slurp (io/resource "flamegraph-rendering/script.js"))
                     (render-template
                      {:graphTitle     (pr-str (or (:title options) ""))
