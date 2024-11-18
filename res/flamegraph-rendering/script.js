@@ -211,6 +211,7 @@ async function constructPackedConfig() {
 
 async function copyConfigToClipboard() {
   navigator.clipboard.writeText(await constructPackedConfig());
+  showToast("Config copied to clipboard.")
 }
 
 async function pasteConfigFromClipboard() {
@@ -218,6 +219,7 @@ async function pasteConfigFromClipboard() {
   applyConfig(await unpackConfig(text));
   redrawTransformsSection();
   fullRedraw(true);
+  showToast("Config pasted from clipboard.")
 }
 
 async function saveConfigToServer() {
@@ -226,6 +228,7 @@ async function saveConfigToServer() {
   req.open("POST", "/save-config?packed-config=" + packedConfig);
   console.log("[clj-async-profiler] Sending save-config request to backend:", req);
   req.send();
+  showToast("Config saved to server.")
 }
 
 function match(string, obj) {
@@ -835,6 +838,14 @@ function canvasOnMouseOut() {
 }
 
 //// Configuration panel
+
+function showToast(message) {
+  toast.textContent = message;
+  // Trigger reflow to restart animation
+  toast.classList.remove('show');
+  void toast.offsetWidth;
+  toast.classList.add('show');
+}
 
 function performSlowAction(action) {
   spinner.style.display = 'inline-block';
