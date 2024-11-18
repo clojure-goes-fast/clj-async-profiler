@@ -16,6 +16,20 @@ const minSamplesToShow = 0; // Don't hide any frames for now.
 const bakedPackedConfig = <<<config>>>;
 const queryPackedConfig = qString.get('config');
 
+async function gzipBase64(inputString) {
+  let encoder = new TextEncoder();
+  let data = encoder.encode(inputString);
+  let cs = new CompressionStream("gzip");
+  let writer = cs.writable.getWriter();
+  writer.write(data);
+  writer.close();
+  let compressed = await new Response(cs.readable).arrayBuffer();
+  let base64Encoded = btoa(String.fromCharCode(...new Uint8Array(compressed)))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_");
+  return base64Encoded;
+}
+
 async function gunzipBase64(inputString) {
   // We use url-encoded base64, convert it to regular base64 first.
   const base64 = inputString
@@ -33,11 +47,21 @@ async function gunzipBase64(inputString) {
 
 async function unpackConfig(packedConfigString) {
   try {
-    var json = JSON.parse(await gunzipBase64(packedConfigString));
+    let json = JSON.parse(await gunzipBase64(packedConfigString));
     console.log("[clj-async-profiler] Unpacked config", packedConfigString, json);
     return json;
   } catch (error) {
     console.error('[clj-async-profiler] Error unpacking config', packedConfigString, error);
+  }
+}
+
+async function packConfig(config) {
+  try {
+    let result = await gzipBase64(JSON.stringify(config));
+    console.log("[clj-async-profiler] Packed config", config, result);
+    return result;
+  } catch (error) {
+    console.error('[clj-async-profiler] Error packing config', config, result);
   }
 }
 
@@ -132,6 +156,12 @@ function _stringToMaybeRegex(s) {
     return s;
 }
 
+function _maybeRegexToString(o) {
+  if (o == null) return null;
+  if (o.source) return '/' + o.source + '/';
+  else return o;
+}
+
 function _makeTransform(type, enabled, what, replacement) {
   let what2 = _stringToMaybeRegex(what);
   let what2Str = what2.toString();
@@ -155,6 +185,32 @@ function applyConfig(config) {
       userTransforms.push(t);
     }
   }
+}
+
+async function copyConfigToClipboard() {
+  // Construct a config instance
+  let config = {}
+  if (highlightState.pattern) config.highlight = _maybeRegexToString(highlightState.pattern);
+  if (reverseGraph) config.reverse = true;
+  if (sortByNameRadio.checked) config['sort-by'] = 'name';
+
+  let transformsData = [];
+  for (let t of userTransforms) {
+    let t2 = {type: t.type, what: _maybeRegexToString(t.what)};
+    if (t.replacement) t2.replacement = t.replacement;
+    if (!t.enabled) t2.enabled = false;
+    transformsData.push(t2);
+  }
+  config.transforms = transformsData;
+
+  navigator.clipboard.writeText(await packConfig(config));
+}
+
+async function pasteConfigFromClipboard() {
+  let text = await navigator.clipboard.readText();
+  applyConfig(await unpackConfig(text));
+  redrawTransformsSection();
+  fullRedraw(true);
 }
 
 function match(string, obj) {
