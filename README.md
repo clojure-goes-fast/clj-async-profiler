@@ -85,9 +85,10 @@ Option map for each profiling command can have a `:pid` value. If it is
 provided, an external JVM process with this PID will be sampled, otherwise the
 current process is targeted.
 
-For a detailed description of clj-async-profiler's more advanced features, see
-the documentation pages:
+For a detailed description of clj-async-profiler's advanced features, see the
+documentation pages:
 
+- [Exploring flamegraphs](https://clojure-goes-fast.com/kb/profiling/clj-async-profiler/exploring-flamegraphs/)
 - [Allocation profiling](http://clojure-goes-fast.com/kb/profiling/clj-async-profiler/allocation-profiling/)
 - [Differential flamegraphs](http://clojure-goes-fast.com/kb/profiling/clj-async-profiler/diffgraphs/)
 - [Startup profiling](http://clojure-goes-fast.com/kb/profiling/clj-async-profiler/startup/)
@@ -96,6 +97,45 @@ the documentation pages:
 Also check out this video from London Clojurians meetup:
 
 [![Clojure Goes Brrr: a quest for performance](http://img.youtube.com/vi/s3mjVAMNVrA/0.jpg)](http://www.youtube.com/watch?v=s3mjVAMNVrA "Clojure Goes Brrr: a quest for performance")
+
+### Sharing flamegraphs
+
+A flamegraph is a fully self-contained HTML file that is saved into
+`/tmp/clj-async-profiler/results/` directory. This file can be sent to somebody
+else and opened in the browser. It can also be uploaded to any hosting that
+allows serving HTML pages.
+
+clj-async-profiler offers out-of-the-box integration with
+[Flamebin](https://flamebin.dev/) — a website dedicated to storing and sharing
+flamegraphs. You can use it like this:
+
+```clj
+;; Assuming that you have already captured a profile, and its ID=1. ID is the
+;; number that comes after the date in flamegraph's filename. Alternatively, you
+;; can provide the full path to the captured .txt profile.
+
+=> (require '[clj-async-profiler.flamebin :as flamebin])
+=> (flamebin/upload-to-flamebin 1 {})
+;; Uploaded /tmp/clj-async-profiler/results/20241120_181404-01-cpu-collapsed.txt to Flamebin.
+;; Share URL: https://flamebin.dev/Y8Gwjh?read-token=xU8wRrZJgXtwkfT0j9
+;; Deletion URL: https://flamebin.dev/api/v1/delete-profile?id=Y8Gwjh&edit-token=...
+;; Private uploads don't show on the index page. Private profiles can only be decrypted by providing read-token. The server doesn't store read-token for private uploads.
+```
+
+The code above uploads the flamegraph to Flamebin and gives you a link you can
+share with your colleagues. By default, it creates a **private** Flamegraph, so
+a read-token must be provided to view the flamegraph. If you capture a
+flamegraph of an open-source project and plan to share it publicly (e.g.,
+adding it to a bug report/PR), you can opt for a public flamegraph:
+
+```clj
+=> (flamebin/upload-to-flamebin 1 {:public? true})
+;; Uploaded /tmp/clj-async-profiler/results/20241120_181404-01-cpu-collapsed.txt to Flamebin.
+;; Share URL: https://flamebin.dev/RibWCt
+;; Deletion URL: https://flamebin.dev/api/v1/delete-profile?id=RibWCt&edit-token=...
+```
+
+Note that the URL is shorter as read-token is no longer present.
 
 ### Tuning for better accuracy
 
@@ -120,6 +160,29 @@ you run clj-async-profiler in an environment where `/tmp` is not sufficiently
 large) by setting Java property `clj-async-profiler.output-dir`:
 
 `clojure -J-Dclj-async-profiler.output-dir=./data ...`
+
+## Troubleshooting
+
+### Error: Can not attach to current VM
+
+Most likely, you are missing `-Djdk.attach.allowAttachSelf` JVM option.
+
+1. Add `-Djdk.attach.allowAttachSelf` to your `deps.edn` or `project.clj` as
+   described in [Usage
+   guide](https://github.com/clojure-goes-fast/clj-async-profiler?tab=readme-ov-file#usage).
+2. Verify that the option is set correctly by running this in the REPL. The
+   command should return `""` (empty string). If it returns `nil`, there is
+   something wrong with how you set the allowAttachSelf option.
+
+    ```clj
+    user=> (System/getProperty "jdk.attach.allowAttachSelf")
+    ""
+    ```
+
+### WARNING: package jdk.attach not in java.base
+
+You are trying to run clj-async-profiler with Java JRE. clj-async-profiler can
+only work under Java **JDK**.
 
 ## Platform support
 
@@ -151,9 +214,9 @@ you should do the following:
 Regular build tasks are inside [build.clj](build.clj) and invoked as `clojure
 -T:build test`, `clojure -T:build jar`, etc.
 
-When starting the REPL, you should add `dev` alias on the list so that
+When starting a REPL, you should add `dev` alias on the list so that
 [virgil](https://github.com/clj-commons/virgil) is loaded. Then, to compile Java
-classes in the REPL, do:
+classes at the REPL, do:
 
 ```clojure
 user> ((requiring-resolve 'virgil/compile-java) ["src"])
@@ -161,16 +224,16 @@ user> ((requiring-resolve 'virgil/compile-java) ["src"])
 
 ## License
 
+clj-async-profiler is distributed under the Eclipse Public License. See
+[ECLIPSE_PUBLIC_LICENSE](docs/ECLIPSE_PUBLIC_LICENSE).
+
+Copyright 2017-2024 Oleksandr Yakushev
+
+---
+
 async-profiler is distributed under Apache-2.0. See
 [APACHE_PUBLIC_LICENSE](docs/APACHE_PUBLIC_LICENSE) file. The location of the
 original repository is
 [https://github.com/async-profiler/async-profiler](https://github.com/async-profiler/async-profiler).
 
 Copyright 2017-2024 Andrei Pangin
-
----
-
-clj-async-profiler is distributed under the Eclipse Public License. See
-[ECLIPSE_PUBLIC_LICENSE](docs/ECLIPSE_PUBLIC_LICENSE).
-
-Copyright 2017-2024 Oleksandr Yakushev
