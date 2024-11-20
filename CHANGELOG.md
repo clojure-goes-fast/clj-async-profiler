@@ -1,12 +1,16 @@
 # Changelog
 
-### 1.5.0-SNAPSHOT
+### 1.5.0
 
 - Implement uploading flamegraphs to [flamebin.dev](https://flamebin.dev).
 - Unify flamegraph configuration. All changeable flamegraph options (highlight,
   transforms, sorting) can now be pre-initialized through:
   - `:config` option passed to `generate-flamegraph` and other functions.
   - Query parameter `?config=`.
+- Add buttons to copy and paste the flamegraph config, and save the current
+  config to server to use for subsequent flamegraphs.
+- Deprecate `:predefined-transforms` option. Use `:config {:transforms ...}`
+  instead.
 
 ### 1.4.0 (2024-10-22)
 
