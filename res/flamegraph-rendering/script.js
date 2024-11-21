@@ -80,7 +80,7 @@ function updateSidebarState() {
     canvasWidth = availableWidth - sidebarWidth;
   } else {
     sidebar.style.display = 'none';
-    smallbar.style.display = 'flex';
+    smallbar.style.display = 'block';
     canvasWidth = availableWidth;
   }
   canvasWidth -= 20; // Reduce by the padding of .graphCol

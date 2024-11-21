@@ -26,7 +26,6 @@
       .row{border-spacing:0.2em 0; width:100%; display:flex;}
       .sidebar-row{display:table; border-spacing:0.2em 0; width:100%; display:inline-flex;
                    margin:5px 0; align-items: center;}
-      .sidebar-row > .toggle{border-radius:10px;}
       .vpadding5{padding:5px 0;}
       .w-100{width:100%;display:flex}
       .graphCol{flex: 80%; padding:5 10; box-sizing:border-box;}
@@ -48,12 +47,12 @@
           background-color: #006d5b; bottom:0; left:0;}
       .radio-input:checked + .radio-label {color:#006d5b;}
       .btn:active {transform:scale(0.90);}
-      .toggle {background:none; border:none; padding:10px; transition: all 0.3s ease;}
+      .toggle {background:none; border:none; padding:6px; transition: all 0.3s ease;}
       .toggle svg {width:16px; height:16px; fill: white; stroke:#006d5b; transition: all 0.3s ease;}
-      .toggle:hover {background-color: #e6f2ff;}
+      .toggle:hover {background-color: #e6f2ff; border-radius: 5px;}
       .toggle.arcs:hover svg {fill:#e6f2ff;}
       .toggle:active {transform:scale(0.90);}
-      .toggle.toggled {background-color: #006d5b;}
+      .toggle.toggled {background-color: #006d5b; border-radius: 5px;}
       .toggle.toggled svg {stroke:#fff; fill:#fff;}
       .toggle.toggled.arcs svg {fill:#006d5b;}
       .toggle.inversed svg { transform: scaleY(-1); }
@@ -70,12 +69,9 @@
       .minibtn {background:none; border:none;}
       .minibtn svg {width:12px; height:12px;}
       
-      #smallbar{box-sizing:border-box; right:1em; top:1em;
+      #smallbar{box-sizing:border-box; padding:10px 6px; right:1em; top:1em;
                 position:fixed; z-index:100; background:#fff; border-radius:10px;
-                box-shadow:#00000061 0px 3px 8px;
-                display:flex; flex-direction:column;}
-      #smallbar > button:first-child {border-top-left-radius:10px; border-top-right-radius:10px;}
-      #smallbar > button:last-child {border-bottom-left-radius:10px; border-bottom-right-radius:10px;}
+                box-shadow:#00000061 0px 3px 8px;}
       .margins {margin-top:5px; margin-bottom:5px;}
       .vmargins {margin: 0px 1px;}
 
@@ -134,15 +130,15 @@
         </div>
         <!-- Collapsed sidebar (smallbar) -->
         <div id="smallbar" style="visibility:hidden;">
-          <button class="toggle" onclick="setSidebarVisibility(true)" title="Expand sidebar">
+          <div class="vpadding5"><button class="toggle" onclick="setSidebarVisibility(true)" title="Expand sidebar">
               <svg><use href="#expand-icon"/></svg>
-          </button>
-          <button id="highlightButton1" class="toggle arcs" onclick="smallbarHighlightButtonOnClick()">
+          </button></div>
+          <div class="vpadding5"><button id="highlightButton1" class="toggle arcs" onclick="smallbarHighlightButtonOnClick()">
               <svg><use href="#search-icon"/></svg>
-          </button>
-          <button id="inverseButton1" class="toggle" onclick="inverseOnClick()">
+          </button></div>
+          <div class="vpadding5"><button id="inverseButton1" class="toggle" onclick="inverseOnClick()">
               <svg><use href="#reverse-icon"/></svg>
-          </button>
+          </button> </div>
         </div>
         <!-- Full sidebar -->
         <div id="sidebar" style="visibility:hidden;">
