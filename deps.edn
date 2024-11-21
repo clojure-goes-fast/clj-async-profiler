@@ -11,7 +11,7 @@
   :1.12 {:override-deps {org.clojure/clojure {:mvn/version "1.12.0"}}}
 
   :dev {:extra-paths ["test"]
-        :extra-deps {virgil/virgil {:mvn/version "0.3.0"}}
+        :extra-deps {virgil/virgil {:mvn/version "0.3.1"}}
         :jvm-opts ["-Djdk.attach.allowAttachSelf"]}
 
   :test {:extra-paths ["test" "target/classes"]
