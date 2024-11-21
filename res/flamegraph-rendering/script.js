@@ -993,11 +993,11 @@ function scrollToTopOrBottom() {
 function setReverseGraph(newReverse) {
   reverseGraph = newReverse;
   if (reverseGraph) {
-    inverseButton1.classList.add("toggled");
-    inverseButton2.classList.add("toggled");
+    inverseButton1.classList.add("inversed");
+    inverseButton2.classList.add("inversed");
   } else {
-    inverseButton1.classList.remove("toggled");
-    inverseButton2.classList.remove("toggled");
+    inverseButton1.classList.remove("inversed");
+    inverseButton2.classList.remove("inversed");
   }
 }
 

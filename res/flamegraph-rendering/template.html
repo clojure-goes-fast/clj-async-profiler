@@ -52,7 +52,10 @@
       .toggle:hover {background-color: #e6f2ff; border-radius: 5px;}
       .toggle.arcs:hover svg {fill:#e6f2ff;}
       .toggle:active {transform:scale(0.90);}
-      .toggle.toggled svg { transform: scaleY(-1); }
+      .toggle.toggled {background-color: #006d5b; border-radius: 5px;}
+      .toggle.toggled svg {stroke:#fff; fill:#fff;}
+      .toggle.toggled.arcs svg {fill:#006d5b;}
+      .toggle.inversed svg { transform: scaleY(-1); }
       input {accent-color:#006d5b;}
       input#isNormalized {weight:16; height:16; margin:6;}
       .chip {background:none; border: 1.5px solid #a5a5a5; border-radius:4px;
