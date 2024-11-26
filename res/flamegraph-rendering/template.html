@@ -9,14 +9,14 @@
       #hl span {padding: 0 3px 0 3px}
       #tooltip {position: absolute; display: none; overflow: hidden; white-space: normal;
                 pointer-events: none; background: #DCE3E5; box-shadow:#00000019 0px 2px 6px;
-                max-width: 250px; animation: .2s fadeIn; animation-fill-mode: forwards;
+                max-width: 250px; animation: .2s popAfterDelay; animation-fill-mode: forwards;
                 visibility: hidden; font-size: 11px; border-radius:4px;}
       #tooltip span {overflow-wrap: anywhere; color: #4C4E4F; display: inline-block; margin: 4px 6px;}
       #tooltip span.sep {margin: 4px 0; color:#fff;}
       #tooltip .framediv {padding:0 0; border-bottom: 1px solid #fff;}
       #tooltip .statdiv {display:flex; justify-content:space-around;}
       #tooltipRightClickHint {font-size:9px; width:100%; display:flex; justify-content:center;}
-      @keyframes fadeIn { 99% { visibility:hidden; } 100% { visibility:visible; }}
+      @keyframes popAfterDelay { 99% { visibility:hidden; } 100% { visibility:visible; }}
       #statusBox {background-color:#ffffe6; position:fixed; left:0; bottom:0; width:100%;
                   box-sizing: border-box; padding:5px 1em; display:inline-flex;
                   justify-content:space-between;}
