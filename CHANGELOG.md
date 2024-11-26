@@ -1,6 +1,12 @@
 # Changelog
 
-### 1.5.0
+### 1.5.1 (2024-11-27)
+
+- [#42](https://github.com/clojure-goes-fast/clj-async-profiler/issues/42):
+  Update sidebar icons.
+- Fix hover tooltip not appearing.
+
+### 1.5.0 (2024-11-20)
 
 - Implement uploading flamegraphs to [flamebin.dev](https://flamebin.dev).
 - Unify flamegraph configuration. All changeable flamegraph options (highlight,
