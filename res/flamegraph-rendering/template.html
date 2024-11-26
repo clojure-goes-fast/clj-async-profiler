@@ -133,10 +133,10 @@
           <div class="vpadding5"><button class="toggle" onclick="setSidebarVisibility(true)" title="Expand sidebar">
               <svg><use href="#expand-icon"/></svg>
           </button></div>
-          <div class="vpadding5"><button id="highlightButton1" class="toggle arcs" onclick="smallbarHighlightButtonOnClick()">
+          <div class="vpadding5"><button id="highlightButton1" class="toggle arcs" onclick="smallbarHighlightButtonOnClick()" title="Highlight">
               <svg><use href="#search-icon"/></svg>
           </button></div>
-          <div class="vpadding5"><button id="inverseButton1" class="toggle" onclick="inverseOnClick()">
+          <div class="vpadding5"><button id="inverseButton1" class="toggle" onclick="inverseOnClick()" title="Reverse graph">
               <svg><use href="#reverse-icon"/></svg>
           </button> </div>
         </div>
@@ -159,7 +159,7 @@
               </button>
             </div>
             <div class="sidebar-row">
-              <div class="w-100"><strong>Reversed</strong></div>
+              <div class="w-100"><strong>Reverse</strong></div>
               <button id="inverseButton2" class="toggle" onclick="inverseOnClick()">
                 <svg><use href="#reverse-icon"/></svg>
               </button>
