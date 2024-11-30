@@ -13,7 +13,7 @@ results for easier interpretation.
 ![](docs/flamegraph-screenshot.png)
 
 <p align = "center"><sup>
-Example flamegraph. <a href="https://htmlpreview.github.io/?https://github.com/clojure-goes-fast/clj-async-profiler/blob/master/docs/flamegraph-example.html">Click</a> to open the interactive version.
+Example flamegraph. <a href="https://flamebin.dev/Rmxt9P">Click</a> to open the interactive version.
 </sup></p>
 
 To collect the profiling data, clj-async-profiler utilizes
