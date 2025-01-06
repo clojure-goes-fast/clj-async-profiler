@@ -52,7 +52,7 @@
       .toggle:hover {background-color: #e6f2ff; border-radius: 5px;}
       .toggle.arcs:hover svg {fill:#e6f2ff;}
       .toggle:active {transform:scale(0.90);}
-      .toggle.toggled {background-color: #006d5b; border-radius: 5px;}
+      .toggle.toggled {background-color:#006d5b; border-radius:5px; color:white;}
       .toggle.toggled svg {stroke:#fff; fill:#fff;}
       .toggle.toggled.arcs svg {fill:#006d5b;}
       .toggle.inversed svg { transform: scaleY(-1); }
@@ -163,6 +163,14 @@
               <button id="inverseButton2" class="toggle" onclick="inverseOnClick()">
                 <svg><use href="#reverse-icon"/></svg>
               </button>
+            </div>
+            <div class="sidebar-row" id="diffModeRow">
+              <div class="w-100"><strong>Diff mode</strong></div>
+              <button id="diffModeBtn1" class="toggle toggled" onclick="setDiffMode(0)" title="Bidirectional diff">A|B</button>
+              <button id="diffModeBtn2" class="toggle" onclick="setDiffMode(1)" title="Overlay diff over A">Aᴮ</button>
+              <button id="diffModeBtn3" class="toggle" onclick="setDiffMode(2)" title="Overlay diff over B">ᴬB</button>
+              <button id="diffModeBtn4" class="toggle" onclick="setDiffMode(3)" title="Just A">A</button>
+              <button id="diffModeBtn5" class="toggle" onclick="setDiffMode(4)" title="Just B">B</button>
             </div>
             <div class="sidebar-row" id="isNormalizedDiv">
               <div class="w-100"><strong>Normalized</strong></div>

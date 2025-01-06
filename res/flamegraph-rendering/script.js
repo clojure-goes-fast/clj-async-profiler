@@ -10,6 +10,7 @@ const qString = new URLSearchParams(window.location.search)
 const transformFilterTemplate = document.getElementById('transformFilterTemplate');
 const transformReplaceTemplate = document.getElementById('transformReplaceTemplate');
 const minSamplesToShow = 0; // Don't hide any frames for now.
+const diffModeBtns = [diffModeBtn1, diffModeBtn2, diffModeBtn3, diffModeBtn4, diffModeBtn5];
 
 /// Config handling
 
@@ -90,6 +91,8 @@ updateSidebarState();
 
 var graphTitle = <<<graphTitle>>> || "Flamegraph";
 var isDiffgraph = <<<isDiffgraph>>>;
+var diffModes = ['bidi_diff', 'a_diff', 'b_diff', 'a', 'b'];
+var currentDiffModeIdx = 0;
 var b_scale_factor;
 var reverseGraph = false;
 var initialStacks = [];
@@ -103,8 +106,7 @@ if (isDiffgraph) {
   maxTooltipWidth = 350;
 } else {
   isNormalizedDiv.remove();
-  tooltipSep2.remove();
-  tooltipPctTotalSpan.remove();
+  diffModeRow.remove();
 }
 tooltip.style['max-width'] = maxTooltipWidth + 'px';
 graphTitleSpan.innerText = graphTitle;
@@ -181,6 +183,7 @@ function applyConfig(config) {
   if (config.highlight) applyHighlight(config.highlight, true);
   if (config.reverse) setReverseGraph(true);
   if (config['sort-by'] == 'name') sortByNameRadio.checked = true;
+  if (config.currentDiffModeIdx) currentDiffModeIdx = config.currentDiffModeIdx;
   if (config.transforms) {
     userTransforms = [];
     for (let configTransform of config.transforms) {
@@ -196,6 +199,8 @@ async function constructPackedConfig() {
   if (highlightState.pattern) config.highlight = _maybeRegexToString(highlightState.pattern);
   if (reverseGraph) config.reverse = true;
   if (sortByNameRadio.checked) config['sort-by'] = 'name';
+  if (currentDiffModeIdx != 0)
+    config.currentDiffModeIdx = currentDiffModeIdx;
 
   let transformsData = [];
   for (let t of userTransforms) {
@@ -498,8 +503,37 @@ function generateLevelsDiffgraph(levels, node, title, level, x) {
 
   levels[level] = levels[level] || [];
   var change = (node.total_samples_a == 0) ? 1.0 : node.total_delta / node.total_samples_a;
-  var color = getDiffColor(change);
-  levels[level].push({left: left, width: node.delta_abs,
+  let width, self_offset, color;
+  switch (diffModes[currentDiffModeIdx]) {
+  case 'bidi_diff':
+    width = node.delta_abs;
+    self_offset = Math.abs(node.self_delta);
+    color = getDiffColor(change);
+    break;
+  case 'a_diff':
+    width = node.total_samples_a;
+    self_offset = node.self_samples_a;
+    color = getDiffColor(change);
+    break;
+  case 'b_diff':
+    width = node.total_samples_b;
+    self_offset = node.self_samples_b;
+    color = getDiffColor(change);
+    break;
+  case 'a':
+    width = node.total_samples_a;
+    self_offset = node.self_samples_a;
+    color = frameColor(title);
+    break;
+  case 'b':
+    width = node.total_samples_b;
+    self_offset = node.self_samples_b;
+    color = frameColor(title);
+    break;
+  }
+
+  levels[level].push({left: left,
+                      width: width,
                       self_samples_a: node.self_samples_a,
                       self_samples_b: node.self_samples_b,
                       self_delta: node.self_delta,
@@ -509,7 +543,7 @@ function generateLevelsDiffgraph(levels, node, title, level, x) {
                       color: color,
                       title: title});
 
-  left += Math.abs(node.self_delta);
+  left += self_offset;
 
   let children = Object.entries(node.children);
   if (sortByNameRadio.checked)
@@ -520,9 +554,17 @@ function generateLevelsDiffgraph(levels, node, title, level, x) {
   for (let i in children) {
     let title = children[i][0];
     let child = children[i][1];
-    generateLevelsDiffgraph(levels, child, title, level+1, left);
-    left += child.delta_abs;
+    left += generateLevelsDiffgraph(levels, child, title, level+1, left);
   }
+  return width;
+}
+
+function setDiffMode(mode) {
+  currentDiffModeIdx = mode;
+  for (let btn of diffModeBtns)
+    btn.classList.remove("toggled");
+  diffModeBtns[mode].classList.add("toggled");
+  fullRedraw();
 }
 
 function generateLevels(node, title) {
@@ -777,7 +819,9 @@ function canvasOnMouseMove(e) {
       tooltip.style.animation = null;
 
       var hoverTipText;
-      if (isDiffgraph) {
+      if (isDiffgraph && currentDiffModeIdx <= 2) {
+        tooltipSep2.style.display = 'inline-block';
+        tooltipPctTotalSpan.style.display = 'inline-block';
         var rel_change = (f.total_samples_a == 0) ? 1.0 : f.total_delta / f.total_samples_a;
         var total_change = f.total_delta / tree.total_samples_a;
         tooltipSamplesSpan.innerHTML = samples(f.total_delta, true, true);
@@ -786,9 +830,22 @@ function canvasOnMouseMove(e) {
         hoverTipText = `${f.title}\n(${samples(f.total_delta, true)}, ${ratioToPct(rel_change)} self, ${ratioToPct(total_change)} total)`;
         // , self_samples_a: ${f.self_samples_a}, self_samples_b: ${f.self_samples_b},  self_delta: ${f.self_delta},  total_samples_a: ${f.total_samples_a},  total_samples_b: ${f.total_samples_b}, total_delta: ${f.total_delta})`;
       } else {
-        tooltipSamplesSpan.innerHTML = samples(f.width, false, true);
-        tooltipPctSelfSpan.innerHTML = bold(pct(f.width, levels[0][0].width));
-        hoverTipText = f.title + '\n(' + samples(f.width) + ', ' + pct(f.width, levels[0][0].width) + ')';
+        tooltipSep2.style.display = 'none';
+        tooltipPctTotalSpan.style.display = 'none';
+        let width, total_width;
+        if (isDiffgraph && currentDiffModeIdx == 3) {
+          width = f.total_samples_a;
+          total_width = levels[0][0].total_samples_a;
+        } else if (isDiffgraph && currentDiffModeIdx == 4) {
+          width = f.total_samples_b;
+          total_width = levels[0][0].total_samples_b;
+        } else {
+          width = f.width;
+          total_width = levels[0][0].width;
+        }
+        tooltipSamplesSpan.innerHTML = samples(width, false, true);
+        tooltipPctSelfSpan.innerHTML = bold(pct(width, total_width));
+        hoverTipText = f.title + '\n(' + samples(width) + ', ' + pct(width, total_width) + ')';
       }
 
       let cursor_x  = e.clientX + window.pageXOffset;

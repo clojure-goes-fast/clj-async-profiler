@@ -1,5 +1,11 @@
 # Changelog
 
+### master (unreleased)
+
+- Add mode switch to diffgraphs. This allows switching between bidirectional
+  diff mode, overlaying diff over either "before" or "after" profile, or plainly
+  showing either "before" or "after".
+
 ### 1.5.1 (2024-11-27)
 
 - [#42](https://github.com/clojure-goes-fast/clj-async-profiler/issues/42):
