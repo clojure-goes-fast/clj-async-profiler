@@ -96,10 +96,10 @@
                      (cond (= diff-from-file stacks)
                            "<button class='diff cancel' onclick=\"window.location.href='/cancel-diff'\">Cancel</button>"
                            stacks
-                           (format "<button class='diff' onclick=\"window.location.href='/finish-diff?to=%s'\">...to this</button>"
+                           (format "<button class='diff' onclick=\"window.location.href='/finish-diff?to=%s'\">...with this</button>"
                                    (.getName stacks)))
                      (when stacks
-                       (format "<button class='diff' onclick=\"window.location.href='/start-diff?from=%s'\">Diff to...</button>"
+                       (format "<button class='diff' onclick=\"window.location.href='/start-diff?from=%s'\">Diff...</button>"
                                (.getName stacks)))))))))))
 
 (defn- generate-diff [to-file-short-name]
