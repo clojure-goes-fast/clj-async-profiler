@@ -231,7 +231,7 @@ user> ((requiring-resolve 'virgil/compile-java) ["src"])
 clj-async-profiler is distributed under the Eclipse Public License. See
 [ECLIPSE_PUBLIC_LICENSE](docs/ECLIPSE_PUBLIC_LICENSE).
 
-Copyright 2017-2024 Oleksandr Yakushev
+Copyright 2017-2025 Oleksandr Yakushev
 
 ---
 
@@ -240,4 +240,4 @@ async-profiler is distributed under Apache-2.0. See
 original repository is
 [https://github.com/async-profiler/async-profiler](https://github.com/async-profiler/async-profiler).
 
-Copyright 2017-2024 Andrei Pangin
+Copyright 2017-2025 Andrei Pangin
