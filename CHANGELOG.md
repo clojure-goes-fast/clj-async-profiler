@@ -5,6 +5,9 @@
 - Add mode switch to diffgraphs. This allows switching between bidirectional
   diff mode, overlaying diff over either "before" or "after" profile, or plainly
   showing either "before" or "after".
+- Add `clj-async-profiler.flamebin/upload-diffgraph` to upload diffgraphs to
+  [flamebin.dev](https://flamebin.dev).
+- Rename function `upload-to-flamebin` to `upload-flamegraph`.
 
 ### 1.5.1 (2024-11-27)
 

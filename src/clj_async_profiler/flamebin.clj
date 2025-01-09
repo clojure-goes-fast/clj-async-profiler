@@ -9,9 +9,9 @@
 (def flamebin-host (atom "https://flamebin.dev"))
 #_(def flamebin-host (atom "http://localhost:8086"))
 
-(defn- make-upload-url [type public?]
-  (format "%s/api/v1/upload-profile?format=dense-edn&type=%s%s"
-          @flamebin-host (name type)
+(defn- make-upload-url [type kind public?]
+  (format "%s/api/v1/upload-profile?format=dense-edn&type=%s&kind=%s%s"
+          @flamebin-host (name type) (name kind)
           (if public? "&public=true" "")))
 
 (defn- gzip-dense-profile [dense-profile]
@@ -29,9 +29,9 @@
 by providing read-token. The server doesn't store read-token for private uploads.~]"
              (str stacks-file) location deletion-link read-token))
 
-(defn- upload-dense-profile [dense-profile event public?]
+(defn- upload-dense-profile [dense-profile event kind public?]
   (let [^bytes gzipped (gzip-dense-profile dense-profile)
-        url (URL. (make-upload-url event public?))
+        url (URL. (make-upload-url event kind public?))
         ^HttpURLConnection connection
         (doto ^HttpURLConnection (.openConnection url)
           (.setDoOutput true)
@@ -55,7 +55,7 @@ by providing read-token. The server doesn't store read-token for private uploads
         (throw (ex-info (str "Failed to upload profile: " msg)
                         {:status status, :body body}))))))
 
-(defn upload-to-flamebin
+(defn upload-flamegraph
   "Generate flamegraph from a collapsed stacks file, identified either by its file
   path or numerical ID, and upload it to flamebin.dev. Options:
 
@@ -65,9 +65,29 @@ by providing read-token. The server doesn't store read-token for private uploads
   (let [{:keys [public?]} options
         {:keys [stacks-file event]} (results/find-profile run-id-or-stacks-file)
         dense-profile (proc/read-raw-profile-file-to-dense-profile stacks-file)
-        {:keys [location] :as resp} (upload-dense-profile dense-profile event public?)]
+        {:keys [location] :as resp} (upload-dense-profile dense-profile event :flamegraph public?)]
     (report-successful-upload stacks-file resp)
     location))
 
-#_(upload-to-flamebin 1 {:public? true})
-#_(upload-to-flamebin "../flamebin/test/res/normal.txt" {})
+#_(upload-flamegraph 1 {:public? true})
+#_(upload-flamegraph "../flamebin/test/res/normal.txt" {})
+
+(defn upload-diffgraph
+  "Generate diffgraph from two collapsed stacks files, identified either by their
+  file paths or numerical IDs, and upload it to flamebin.dev. Options:
+
+  :public? - if true, flamegraph will be displayed on the main page and publicly
+             accessible to everyone; otherwise, will requite a token to view."
+  [profile-before profile-after options]
+  (let [{:keys [public?]} options
+        {id1 :id, stacks1 :stacks-file, ev1 :event} (results/find-profile profile-before)
+        {id2 :id, stacks2 :stacks-file, ev2 :event, date :date} (results/find-profile profile-after)
+        _ (when-not (= ev1 ev2)
+            (throw (ex-info "Profiler runs must be of the same event type."
+                            {:before ev1, :after ev2})))
+        diff-profile (proc/generate-dense-diff-profile stacks1 stacks2 identity)
+        {:keys [location] :as resp} (upload-dense-profile diff-profile ev1 :diffgraph public?)]
+    (report-successful-upload (str stacks1 " VS " stacks2 "diffgarph") resp)
+    location))
+
+#_(upload-diffgraph "diff-a.txt" "diff-b.txt" {:public? true})

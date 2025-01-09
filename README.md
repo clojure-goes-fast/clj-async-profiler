@@ -115,7 +115,7 @@ flamegraphs. You can use it like this:
 ;; can provide the full path to the captured .txt profile.
 
 => (require '[clj-async-profiler.flamebin :as flamebin])
-=> (flamebin/upload-to-flamebin 1 {})
+=> (flamebin/upload-flamegraph 1 {})
 ;; Uploaded /tmp/clj-async-profiler/results/20241120_181404-01-cpu-collapsed.txt to Flamebin.
 ;; Share URL: https://flamebin.dev/Y8Gwjh?read-token=xU8wRrZJgXtwkfT0j9
 ;; Deletion URL: https://flamebin.dev/api/v1/delete-profile?id=Y8Gwjh&edit-token=...
@@ -129,13 +129,17 @@ flamegraph of an open-source project and plan to share it publicly (e.g.,
 adding it to a bug report/PR), you can opt for a public flamegraph:
 
 ```clj
-=> (flamebin/upload-to-flamebin 1 {:public? true})
+=> (flamebin/upload-flamegraph 1 {:public? true})
 ;; Uploaded /tmp/clj-async-profiler/results/20241120_181404-01-cpu-collapsed.txt to Flamebin.
 ;; Share URL: https://flamebin.dev/RibWCt
 ;; Deletion URL: https://flamebin.dev/api/v1/delete-profile?id=RibWCt&edit-token=...
 ```
 
 Note that the URL is shorter as read-token is no longer present.
+
+It is also possible to upload diffgraphs using
+`clj-async-profiler.flamebin/upload-diffgraph`. You need to provide two profiles
+(before and after) in the same manner as to `generate-diffgraph`.
 
 ### Tuning for better accuracy
 

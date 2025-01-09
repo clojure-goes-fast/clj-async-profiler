@@ -29,15 +29,20 @@
     ;; Test uploads to Flamebin
     (when (= (System/getenv "TEST_FLAMEBIN") "true")
       (reset! flamebin/flamebin-host "https://qa.flamebin.dev")
-      (flamebin/upload-to-flamebin stacks-file {})
 
       (testing "private (default) uploads contain a read-token"
-        (is (str/includes? (flamebin/upload-to-flamebin stacks-file {})
+        (is (str/includes? (flamebin/upload-flamegraph stacks-file {})
                            "read-token=")))
 
       (testing "public uploads don't have a read-token")
-      (is (not (str/includes? (flamebin/upload-to-flamebin stacks-file {:public? true})
-                              "read-token="))))))
+      (is (not (str/includes? (flamebin/upload-flamegraph stacks-file {:public? true})
+                              "read-token=")))
+
+      (testing "diffgraph uploading"
+        (sut/start {:event :itimer})
+        (reduce *' (range 1 100000))
+        (let [stacks2 (sut/stop {:generate-flamegraph? false})]
+          (is (string? (flamebin/upload-diffgraph stacks-file stacks2 {}))))))))
 
 (defn curl-ui [port]
   (let [conn (.openConnection (URL. (str "http://localhost:" port)))]
