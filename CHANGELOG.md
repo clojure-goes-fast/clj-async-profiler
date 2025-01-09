@@ -1,6 +1,6 @@
 # Changelog
 
-### master (unreleased)
+### 1.6.0 (2025-01-09)
 
 - Add mode switch to diffgraphs. This allows switching between bidirectional
   diff mode, overlaying diff over either "before" or "after" profile, or plainly
