@@ -650,13 +650,14 @@ function render(newRootFrame, newLevel) {
   px = canvasWidth / currentRootFrame.width;
 
   const matchedSpans = [];
+  const totalMatchedSpans = [];
 
-  function totalMatched() {
+  function calculateMatched(spans) {
     let total = 0;
     let left = 0;
-    for (let x in matchedSpans) {
+    for (let x in spans) {
       if (+x >= left) {
-        let width = matchedSpans[x];
+        let width = spans[x];
         total += width;
         left = +x + width;
       }
@@ -674,9 +675,14 @@ function render(newRootFrame, newLevel) {
   function drawFrame(f, y, alpha, h) {
     totalRenderedFrames += 1;
     // if (h == 78) return;
+    var frameMatched = highlightPattern && f.title.match(highlightPattern);
+    if (frameMatched && !(totalMatchedSpans[f.left] >= f.width)) {
+      totalMatchedSpans[f.left] = f.width;
+    }
+
     if (f.left < x1 && f.left + f.width > x0) {
       let color = f.color;
-      if (highlightPattern && f.title.match(highlightPattern)) {
+      if (frameMatched) {
         if (!(matchedSpans[f.left] >= f.width))
           matchedSpans[f.left] = f.width;
         color = palette.highlight;
@@ -717,7 +723,10 @@ function render(newRootFrame, newLevel) {
     // Binary search left bound
     let lo = 0, hi = frames.length;
     let fromIdx = lo, toIdx = hi;
-    if (currentRootLevel > 0) {
+    // Only run binary search if highlight is not enabled. If it is enabled, we
+    // want to run through all frames anyway to calculate the correct total
+    // matched percentage.
+    if (currentRootLevel > 0 && highlightPattern == null) {
       while (lo < hi) {
         let mid = Math.floor((lo + hi) / 2);
         let frame = frames[mid];
@@ -743,7 +752,7 @@ function render(newRootFrame, newLevel) {
 
   if (highlightPattern != null) {
     matchContainer.style.display = 'inherit';
-    matchedLabel.textContent = pct(totalMatched(), currentRootFrame.width);
+    matchedLabel.textContent = `${pct(calculateMatched(matchedSpans), currentRootFrame.width)} (${pct(calculateMatched(totalMatchedSpans), levels[0][0].width)} total)`;
   } else
     matchContainer.style.display = 'none';
   console.log("[clj-async-profiler] Total frames rendered:", totalRenderedFrames);
