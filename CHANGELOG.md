@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.6.1 (2025-02-10)
+
+- Show total matched percentage when highlight is enabled.
+
 ### 1.6.0 (2025-01-09)
 
 - Add mode switch to diffgraphs. This allows switching between bidirectional
