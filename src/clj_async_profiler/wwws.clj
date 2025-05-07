@@ -15,6 +15,7 @@
             [clojure.string :as str])
   (:import (com.sun.net.httpserver HttpExchange HttpHandler HttpServer)
            java.io.File
+           (java.util.concurrent Executors ThreadFactory)
            (java.net HttpURLConnection InetSocketAddress URL)))
 
 (defn get-extension [^String filename]
@@ -82,7 +83,17 @@
     (.createContext "/" (proxy [HttpHandler] []
                           (handle [^HttpExchange exchange]
                             (root-handler exchange handler))))
-    (.setExecutor nil)
+    ;; Specify executor that will produce a custom thread for the HTTP server:
+    ;; - thread should be daemon to prevent server from stalling the shutdown
+    ;; - thread should interit Clojure's classloader so that it sees resources
+    ;;   that were loaded in dynamically
+    (.setExecutor (Executors/newSingleThreadExecutor
+                   (let [cl (clojure.lang.RT/baseLoader)]
+                     (reify ThreadFactory
+                       (newThread [_ r]
+                         (doto (Thread. r)
+                           (.setContextClassLoader cl)
+                           (.setDaemon true)))))))
     (.start)))
 
 (defn get-address [^HttpServer server]
