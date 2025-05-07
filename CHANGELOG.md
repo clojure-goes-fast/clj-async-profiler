@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.6.2 (2025-05-07)
+
+- Supply custom executor to HTTP server which preserves Clojure classloader.
+
 ### 1.6.1 (2025-02-10)
 
 - Show total matched percentage when highlight is enabled.
