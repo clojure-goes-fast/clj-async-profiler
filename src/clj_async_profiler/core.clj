@@ -1,5 +1,6 @@
 (ns clj-async-profiler.core
-  (:require [clj-async-profiler.post-processing :as post-proc]
+  (:require [clj-async-profiler.jfr :as jfr]
+            [clj-async-profiler.post-processing :as post-proc]
             [clj-async-profiler.render :as render]
             [clj-async-profiler.results :as results]
             [clj-async-profiler.util :as util]
@@ -50,7 +51,7 @@
 (defonce ^:private start-options (atom nil))
 
 (defn- make-command-string
-  [command {:keys [file event interval framebuf threads features]
+  [command {:keys [file event interval framebuf threads features] :as opts
             :or {event :cpu, interval 1000000}}]
   (case command
     "list" (format "%s,file=%s" command file)
@@ -58,13 +59,15 @@
     "start" (let [features (if (= features :all)
                              [:vtable :comptask]
                              features)]
-              (format "%s,event=%s,file=%s,interval=%s,%s%s%scollapsed"
+              (format #_"%s,event=%s,file=%s,interval=%s,%s%s%scollapsed"
+                      "%s,event=%s,file=%s,interval=%s,%s%s%s%s"
                       command (name event) file interval
                       (if (seq features)
                         (str "features=" (str/join "+" (map name features)) ",")
                         "")
                       (if framebuf (str "framebuf=" framebuf ",") "")
-                      (if threads "threads," "")))
+                      (if threads "threads," "")
+                      (or (some-> (:format opts) name) "collapsed")))
     "stop" (format "%s,file=%s,collapsed" command file)))
 
 (defonce ^:private virtual-machines (atom {}))
@@ -141,6 +144,24 @@
        (throw (ex-info msg {}))))))
 (alter-meta! #'start update :doc format start-options-docstring)
 
+(defn start-jfr
+  "Start the profiler. Options:
+
+  :pid - process to attach to (default: current process)
+  %s"
+  ([] (start-jfr {}))
+  ([options]
+   (let [options (merge @default-options options)
+         pid (or (:pid options) (util/get-self-pid))
+         run-id (swap! results/next-run-id inc)
+         event (:event options :cpu)
+         now (Date.)
+         f (results/results-file now run-id event "profile" "jfr")]
+     (attach-agent pid (make-command-string "start" (assoc options :file f
+                                                           :format :jfr)))
+     (reset! start-options (assoc options :file f))
+     f)))
+
 (def ^:private stop-options-docstring
   ":title - title of the generated flamegraph (optional)
   :config - a map to preconfigure the flamegraph. E.g.:
@@ -201,6 +222,25 @@
     diffgraph-file))
 (alter-meta! #'generate-diffgraph update :doc format stop-options-docstring)
 
+(defn generate-heatgraph
+  "Generate heatgraph from a JFR file, identified either by its file path or
+  numerical ID. Options:
+
+  %s"
+  [run-id-or-stacks-file options]
+  (let [options (merge @default-options options)
+        {:keys [id stacks-file event]} (results/find-profile run-id-or-stacks-file)
+        heatgraph-file (results/results-file (:date options (Date.)) id event
+                                             "heatgraph" "html")
+        dense-profile (jfr/jfr-to-dense-profile stacks-file)
+        options (update options :title #(or % (.getName ^File heatgraph-file)))]
+    (spit heatgraph-file (render/render-html-heatgraph dense-profile options))
+    (swap! results/file->metadata assoc heatgraph-file
+           {:stacks-file stacks-file
+            :samples (:total-samples dense-profile)})
+    heatgraph-file))
+(alter-meta! #'generate-heatgraph update :doc format stop-options-docstring)
+
 (defn stop
   "Stop the currently running profiler and save the results into a text file.
   If flamegraph is generated next, the flamegraph file will be returned,
@@ -228,6 +268,31 @@
        f))))
 (alter-meta! #'stop update :doc format stop-options-docstring)
 
+(defn stop-jfr
+  "Stop the currently running profiler.
+  If heatgraph is generated next, the flamegraph file will be returned.
+  Available options:
+
+  :pid - process to attach to (default: current process)
+  :generate-heatgraph? - if true, generate heatgraph in the same directory as
+                          the profile (default: true)
+  %s"
+  ([] (stop-jfr {}))
+  ([options]
+   (let [options (merge @default-options options)
+         pid (or (:pid options) (util/get-self-pid))
+         ^String status-msg (status options)
+         run-id (swap! results/next-run-id inc)
+         event (:event @start-options :cpu)
+         _ (when-not (.contains status-msg "is running")
+             (throw (ex-info status-msg {})))
+         now (Date.)
+         f (:file @start-options)]
+     (attach-agent pid "stop")
+     (if (:generate-heatgraph? options true)
+       (generate-heatgraph f (assoc options :date now))
+       f))))
+
 (defmacro profile
   "Profile the execution of `body`. If the first argument is a map, treat it as
   options. Options:
@@ -244,6 +309,22 @@
                      (finally (stop options#)))]
        ret#)))
 (alter-meta! #'profile update :doc format start-options-docstring stop-options-docstring)
+
+(defmacro profile-jfr
+  "Profile the execution of `body`, but record it as a JFR file. If the first
+  argument is a map, treat it as options. Options:
+
+  %s
+  %s"
+  [options? & body]
+  (let [[options body] (if (map? options?)
+                         [options? body]
+                         [{} (cons options? body)])]
+    `(let [options# ~options
+           _# (println (start-jfr options#))
+           ret# (try ~@body
+                     (finally (stop-jfr options#)))]
+       ret#)))
 
 (defn profile-for
   "Run the profiler for the specified duration. Return the generated flamegraph

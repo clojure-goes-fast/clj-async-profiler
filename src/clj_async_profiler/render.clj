@@ -80,7 +80,7 @@
       (.append sb "\",\n"))
     (str sb)))
 
-(defn- print-add-stacks [stacks diffgraph?]
+(defn- print-add-stacks [stacks diffgraph? heatgraph?]
   (let [sb (StringBuilder.)
         prefix (if diffgraph? "d([" "a([")]
     (doseq [[stack value] stacks]
@@ -89,11 +89,22 @@
         (.append sb frame)
         (.append sb ","))
       (.append sb "],")
-      (if diffgraph?
+      (cond
+        diffgraph?
         (let [{:keys [samples-a samples-b delta]} value]
           (.append sb (str samples-a))
           (.append sb ",")
           (.append sb (str samples-b)))
+
+        heatgraph?
+        (let [value value]
+          (.append sb "[")
+          (doseq [val value]
+            (.append sb (str val))
+            (.append sb ","))
+          (.append sb "]"))
+
+        :else
         (.append sb (str value)))
       (.append sb ");\n"))
     (str sb)))
@@ -101,7 +112,7 @@
 (defn render-html-flamegraph [dense-profile options diffgraph?]
   (let [{:keys [stacks id->frame]} dense-profile
         idToFrame (print-id-to-frame id->frame)
-        data (print-add-stacks stacks diffgraph?)
+        data (print-add-stacks stacks diffgraph? false)
         config (merge {:transforms (:predefined-transforms options)} ; deprecated
                       (:config options))
         _ (run! validate-transform (:transforms config))
@@ -113,6 +124,26 @@
                     (render-template
                      {:graphTitle     (pr-str (or (:title options) ""))
                       :isDiffgraph    (str (boolean diffgraph?))
+                      :config         (str "\"" packed-config "\"")
+                      :idToFrame      idToFrame
+                      :stacks         data}))]
+    (-> (slurp (io/resource "flamegraph-rendering/template.html"))
+        (render-template {:script full-js}))))
+
+(defn render-html-heatgraph [dense-profile options]
+  (let [{:keys [stacks id->frame]} dense-profile
+        idToFrame (print-id-to-frame id->frame)
+        data (print-add-stacks stacks false true)
+        config (:config options {})
+        _ (run! validate-transform (:transforms config))
+        packed-config (or
+                       ;; Config saved from flamegraph takes the priorioty.
+                       (:saved-packed-config options)
+                       (base64 (gzip-string (edn->json config))))
+        full-js (-> (slurp (io/resource "flamegraph-rendering/heatgraph_script.js"))
+                    (render-template
+                     {:graphTitle     (pr-str (or (:title options) ""))
+                      :isDiffgraph    "false"
                       :config         (str "\"" packed-config "\"")
                       :idToFrame      idToFrame
                       :stacks         data}))]

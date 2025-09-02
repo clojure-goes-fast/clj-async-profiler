@@ -3,6 +3,7 @@
     <meta charset="utf-8"/>
     <link rel='icon' href='favicon.png' type='image/x-icon'/>
     <style>
+      .hidden {display:none;}
       body {margin:0; padding:0; background:linear-gradient(70deg, #ffffd0 0%, #fff 100%)}
       p {margin: 5px 0 5px 0}
       #hl {position: absolute; display: none; overflow: hidden; white-space: nowrap; pointer-events: none; background-color: #00000000; outline: 0.5px solid #222; height: 15px}
@@ -68,13 +69,16 @@
       .flx {display:flex; gap:5px; align-items:center;}
       .minibtn {background:none; border:none;}
       .minibtn svg {width:12px; height:12px;}
-      
+
       #smallbar{box-sizing:border-box; padding:10px 6px; right:1em; top:1em;
                 position:fixed; z-index:100; background:#fff; border-radius:10px;
                 box-shadow:#00000061 0px 3px 8px;}
       .margins {margin-top:5px; margin-bottom:5px;}
       .vmargins {margin: 0px 1px;}
 
+      #heatmap-container{box-sizing:border-box;padding:6px 6px;left:1em; top:1em;
+                         position:fixed;z-index:100;background:#fff;border-radius:10px;
+                         box-shadow:#00000061 0px 3px 8px;}
       .context {display: inline-block; position:fixed; top:0px; left:0px; min-width:200px;
                 color:#fff;  background:#262933; font-size:9pt; border:1px solid #333333;
                 border-radius:6px; box-shadow:2px 2px 2px -1px #00000088;
@@ -103,6 +107,18 @@
       #toast.show {animation: fadeIn 0.2s forwards, fadeOut 0.2s 2s forwards;}
       @keyframes fadeIn {from {opacity:0; transform:scale(0);} to {opacity:1; transform:scale(1);}}
       @keyframes fadeOut {from {opacity:1; transform:scale(1);} to {opacity:1; transform:scale(0);}}
+      .heatmap {border: 1px solid #006d5b;cursor: none;user-select: none;}
+      .info-panel {background:#fff; border-radius:8px; padding:10px; box-shadow:0 2px 10px rgba(0,0,0,0.1);}
+      .legend {display:flex; align-items:center; gap:15px;}
+      .legend-gradient {width:200px; height:0.3rem;border:1px solid #ccc;
+                        border-radius:3px;
+                        background: linear-gradient(to right,
+                                                    white 0%,
+                                                    yellow 25%,
+                                                    orange 50%,
+                                                    red 75%,
+                                                    black 100%);}
+      .legend-labels {display:flex; justify-content:space-between; width:200px; font-size:9px;}
     </style>
   </head>
   <body style='font: 12px Verdana, sans-serif'>
@@ -245,6 +261,31 @@
             </div>
           </div>
         </div>
+        <div id="heatmap-container" style="visibility:show;">
+          <div>
+          <div class="flx" style="margin-top:1px;margin-bottom:1px;justify-content:space-between;">
+            <button class="toggle" onclick="setHeatmapVisibility(true)" title="Expand heatmap">
+              <svg><use href="#heatmap-icon"/></svg>
+            </button>
+            <div id="heatmap-legend" class="hidden">
+            <div class="legend">
+              <span>Activity Level:</span>
+              <div>
+                <div class="legend-labels">
+                  <span>Low</span>
+                  <span>High</span>
+                </div>
+                <div class="legend-gradient"></div>
+              </div>
+            </div>
+          </div>
+          </div>
+          <canvas id="heatmap" class="heatmap hidden" width="500" height="200"></canvas>
+          <div id="heatmap-info-panel" class="info-panel hidden">
+            <div id="selectionInfo">Click and drag on the heatmap to select a time range.</div>
+          </div>
+          </div>
+        </div>
         <span id="toast"></span>
       </div>
       <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
@@ -327,6 +368,13 @@
               <path d="M171,525 C171.552,525 172,524.553 172,524 L172,520 C172,519.447 171.552,519 171,519 C170.448,519 170,519.447 170,520 L170,524 C170,524.553 170.448,525 171,525 L171,525 Z M182,543 C182,544.104 181.104,545 180,545 L156,545 C154.896,545 154,544.104 154,543 L154,519 C154,517.896 154.896,517 156,517 L158,517 L158,527 C158,528.104 158.896,529 160,529 L176,529 C177.104,529 178,528.104 178,527 L178,517 L180,517 C181.104,517 182,517.896 182,519 L182,543 L182,543 Z M160,517 L176,517 L176,526 C176,526.553 175.552,527 175,527 L161,527 C160.448,527 160,526.553 160,526 L160,517 L160,517 Z M180,515 L156,515 C153.791,515 152,516.791 152,519 L152,543 C152,545.209 153.791,547 156,547 L180,547 C182.209,547 184,545.209 184,543 L184,519 C184,516.791 182.209,515 180,515 L180,515 Z" id="save-floppy" sketch:type="MSShapeGroup">
               </path>
             </g>
+          </symbol>
+        </defs>
+      </svg>
+      <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <symbol id="heatmap-icon" viewBox="0 0 16 16" fill="#006d5b" stroke-width="0">
+            <rect x="1" y="1" width="2.9375" height="2.9375"/><rect x="4.6875" y="1" width="2.9375" height="2.9375"/><rect x="12.0625" y="1" width="2.9375" height="2.9375"/><rect x="1" y="4.6875" width="2.9375" height="2.9375"/><rect x="4.6875" y="4.6875" width="2.9375" height="2.9375"/><rect x="12.0625" y="4.6875" width="2.9375" height="2.9375"/><rect x="1" y="8.375" width="2.9375" height="2.9375"/><rect x="12.0625" y="8.375" width="2.9375" height="2.9375"/><rect x="1" y="12.0625" width="2.9375" height="2.9375"/><rect x="8.375" y="12.0625" width="2.9375" height="2.9375"/><rect x="12.0625" y="12.0625" width="2.9375" height="2.9375"/>
           </symbol>
         </defs>
       </svg>

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: EPL-1.0
-// Copyright 2021-2024 Oleksandr Yakushev
+// Copyright 2021-2026 Oleksandr Yakushev
 // Contains code from https://github.com/async-profiler/async-profiler, licensed
 // under Apache License, Version 2.0.
 
@@ -108,7 +108,6 @@ if (isDiffgraph) {
   isNormalizedDiv.remove();
   diffModeRow.remove();
 }
-document.getElementById('heatmap-container').remove();
 tooltip.style['max-width'] = maxTooltipWidth + 'px';
 graphTitleSpan.innerText = graphTitle;
 graphTitleSpan.title = graphTitle;
@@ -116,6 +115,8 @@ graphTitleSpan.title = graphTitle;
 if (window.location.protocol == 'file:') {
   saveConfigButton.remove();
 }
+
+total_buckets = 0
 
 function a(frameIds, samples) {
   var same = frameIds[0];
@@ -126,6 +127,7 @@ function a(frameIds, samples) {
   }
 
   _lastInsertedStack = frames;
+  total_buckets = Math.max(total_buckets, samples.length);
   initialStacks.push({stackStr: frames.join(";"), samples: samples});
 }
 
@@ -330,7 +332,7 @@ function makeTreeNode() {
             total_samples_a: 0, total_samples_b: 0, total_delta: 0,
             delta_abs: 0, children: {}};
   else
-    return {self: 0, total: 0, children: {}};
+    return {self: [], total: [], children: {}};
 }
 
 function getChildNode(node, childTitle) {
@@ -343,6 +345,35 @@ function getChildNode(node, childTitle) {
   return child;
 }
 
+function addArrays(arr1, arr2) {
+  if (arr1.length < arr2.length) {
+    let t = arr1;
+    arr1 = arr2;
+    arr2 = t;
+  }
+  let arr = arr1.slice();
+  // let len = math.max(arr1.length, arr2.length);
+  // let arr = new Array(len);
+  // for (let i = 0, len1 = arr1.length; i < len1; i++)
+  //   arr[i] = arr1[i];
+  for (let i = 0, len2 = arr2.length; i < len2; i++)
+    arr[i] += arr2[i];
+  return arr;
+}
+
+function sumArray(arr, from, to) {
+  let sum = 0;
+  if (from != null) {
+    to = Math.min(arr.length, to);
+  } else {
+    from = 0;
+    to = arr.length;
+  }
+  for (let i = from; i < to; i++)
+    sum += arr[i];
+  return sum;
+}
+
 function parseStacksToTreeSimple(stacks, treeRoot) {
   for (let i = 0, len = stacks.length; i < len; i++) {
     let stack = stacks[i];
@@ -352,17 +383,17 @@ function parseStacksToTreeSimple(stacks, treeRoot) {
     let samples = stack.samples;
     if (reverseGraph) {
       for (let j = stackLen-1; j >= 0; j--) {
-        node.total += samples;
+        node.total = addArrays(node.total, samples);
         node = getChildNode(node, stackframes[j]);
       }
     } else {
       for (let j = 0; j < stackLen; j++) {
-        node.total += samples;
+        node.total = addArrays(node.total, samples);
         node = getChildNode(node, stackframes[j]);
       }
     }
-    node.total += samples;
-    node.self += samples;
+    node.total = addArrays(node.total, samples);
+    node.self = addArrays(node.self, samples);
   }
 }
 
@@ -476,14 +507,15 @@ function getDiffColor(value) {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
-function generateLevelsSimple(levels, node, title, level, x) {
+function generateLevelsSimple(levels, node, title, level, x, from_bucket, to_bucket) {
   var left = x;
 
   levels[level] = levels[level] || [];
-  levels[level].push({left: left, width: node.total, color: frameColor(title),
+  let width = sumArray(node.total, from_bucket, to_bucket);
+  levels[level].push({left: left, width: width, color: frameColor(title),
                       title: title});
 
-  left += node.self;
+  left += sumArray(node.self, from_bucket, to_bucket);
 
   let children = Object.entries(node.children);
   if (sortByNameRadio.checked)
@@ -494,8 +526,8 @@ function generateLevelsSimple(levels, node, title, level, x) {
   for (let i in children) {
     let title = children[i][0];
     let child = children[i][1];
-    generateLevelsSimple(levels, child, title, level+1, left);
-    left += child.total;
+    generateLevelsSimple(levels, child, title, level+1, left, from_bucket, to_bucket);
+    left += sumArray(child.total, from_bucket, to_bucket);
   }
 }
 
@@ -570,11 +602,19 @@ function setDiffMode(mode) {
 
 function generateLevels(node, title) {
   console.time("[clj-async-profiler] Generate flat levels");
+  from_bucket = 0
+  to_bucket = total_buckets / 2
   levels = [];
   if (isDiffgraph)
     generateLevelsDiffgraph(levels, node, title, 0, 0);
-  else
-    generateLevelsSimple(levels, node, title, 0, 0);
+  else {
+    let from = null, to = null;
+    if (heatmap && heatmap.currentSelection) {
+      from = heatmap.currentSelection.start;
+      to = heatmap.currentSelection.end + 1;
+    }
+    generateLevelsSimple(levels, node, title, 0, 0, from, to);
+  }
   console.timeEnd("[clj-async-profiler] Generate flat levels");
 }
 
@@ -1094,6 +1134,25 @@ function setSidebarVisibility(isVisible) {
   render(currentRootFrame, currentRootLevel);
 }
 
+heatmapVisible = false;
+function setHeatmapVisibility(isVisible) {
+  heatmapVisible = !heatmapVisible;
+  if (heatmapVisible) {
+    document.getElementById('heatmap').classList.remove('hidden');
+    document.getElementById('heatmap-legend').classList.remove('hidden');
+    document.getElementById('heatmap-info-panel').classList.remove('hidden');
+    heatmap.reinitHeatmapCanvas();
+  } else {
+    document.getElementById('heatmap').classList.add('hidden');
+    document.getElementById('heatmap-legend').classList.add('hidden');
+    document.getElementById('heatmap-info-panel').classList.add('hidden');
+  }
+  // sidebarVisible = isVisible;
+  // updateSidebarState();
+  // reinitCanvas();
+  // render(currentRootFrame, currentRootLevel);
+}
+
 // Context menu implementation was taken from https://github.com/heapoverride/context-js
 // and modified to suit our needs. Licensed Under MIT License, author: @UnrealSec
 class ContextMenu {
@@ -1281,6 +1340,236 @@ const ctxMenuData = [
 const ctxMenu = new ContextMenu(document.getElementById('canvasDiv'), ctxMenuData);
 ctxMenu.install();
 
+from_bucket = 0
+to_bucket = 117
+
+heatmap = null;
+
+class InteractiveHeatmap {
+  constructor(canvasId, data, options = {}) {
+    this.canvas = document.getElementById(canvasId);
+    this.ctx = this.canvas.getContext('2d');
+    this.data = data;
+    this.cellSize = options.cellSize;
+    this.pointsPerColumn = options.pointsPerColumn;
+    this.cols = Math.ceil(this.data.length / this.pointsPerColumn);
+    this.rows = this.pointsPerColumn;
+    this.canvas.width = this.cols * this.cellSize;
+    this.canvas.height = this.rows * this.cellSize;
+
+    // Selection state
+    this.isSelecting = false;
+    this.selectionStart = null;
+    this.selectionEnd = null;
+    this.currentSelection = null;
+
+    // Callbacks
+    this.onSelectionChange = options.onSelectionChange || (() => {});
+    this.onHover = options.onHover || (() => {});
+
+    this.setupEventListeners();
+    // this.render();
+  }
+
+  reinitHeatmapCanvas() {
+    this.canvas.width = this.cols * this.cellSize;
+    this.canvas.height = this.rows * this.cellSize;
+    if (devicePixelRatio) {
+      this.canvas.width = this.canvas.width * devicePixelRatio;
+      this.canvas.height = this.canvas.height * devicePixelRatio;
+      this.ctx.scale(devicePixelRatio, devicePixelRatio);
+    }
+    this.px = this.canvas.height / this.rows;
+    this.render();
+  }
+
+  setupEventListeners() {
+    this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+    this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+    this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+    this.canvas.addEventListener('mouseleave', (e) => this.handleMouseLeave(e));
+  }
+
+  getMousePos(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+  }
+
+  pixelToDataIndex(x, y) {
+    const col = Math.floor(x / this.px);
+    const row = Math.floor(y / this.px);
+    return col * this.pointsPerColumn + row;
+  }
+
+  dataIndexToPixel(index) {
+    const col = Math.floor(index / this.pointsPerColumn);
+    const row = index % this.pointsPerColumn;
+    return {
+      x: col * this.cellSize,
+      y: row * this.cellSize
+    };
+  }
+
+  handleMouseDown(e) {
+    const pos = this.getMousePos(e);
+    const index = this.pixelToDataIndex(pos.x, pos.y);
+
+    if (index >= 0 && index < this.data.length) {
+      this.isSelecting = true;
+      this.selectionStart = index;
+      this.selectionEnd = index;
+      this.render();
+    }
+  }
+
+  handleMouseMove(e) {
+    const pos = this.getMousePos(e);
+    const index = this.pixelToDataIndex(pos.x, pos.y);
+
+    if (index >= 0 && index < this.data.length) {
+      this.hoverCellIndex = index;
+      // Update hover info
+      const timeMs = index * 10;
+      const seconds = (timeMs / 1000).toFixed(2);
+      const value = this.data[index];
+      this.onHover(`Time: ${seconds}s (${value} samples)`);
+
+      if (this.isSelecting) {
+        this.selectionEnd = index;
+        // this.render();
+      }
+    } else {
+      this.hoverCellIndex = null;
+    }
+    this.render();
+  }
+
+  handleMouseUp(e) {
+    if (this.isSelecting) {
+      this.isSelecting = false;
+
+      const start = Math.min(this.selectionStart, this.selectionEnd);
+      const end = Math.max(this.selectionStart, this.selectionEnd);
+
+      this.currentSelection = { start, end };
+
+      // Call the callback with selection info
+      const startTime = start * 10; // ms
+      const endTime = (end + 1) * 10; // ms (inclusive)
+      const duration = endTime - startTime;
+
+      this.onSelectionChange({
+        startIndex: start,
+        endIndex: end,
+        startTimeMs: startTime,
+        endTimeMs: endTime,
+        durationMs: duration,
+        selectedValues: this.data.slice(start, end + 1)
+      });
+    }
+  }
+
+  handleMouseLeave(e) {
+    this.isSelecting = false;
+    this.onHover('');
+  }
+
+  valueToColor(value, maxValue) {
+    const normalized = value / maxValue;
+
+    // Reversed fire gradient: white -> yellow -> orange -> red -> black
+    const hue = (1 - normalized) * 60; // 60° (yellow) to 0° (red)
+    const saturation = normalized > 0.9 ? 0 : 100; // End with no saturation (black)
+    const lightness = (1 - normalized) * 90 + 10; // 100% (white) to 10% (near black)
+
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  }
+
+  render() {
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    const maxValue = Math.max(...this.data);
+
+    // Draw data cells
+    for (let i = 0; i < this.data.length; i++) {
+      const pos = this.dataIndexToPixel(i);
+      const color = this.valueToColor(this.data[i], maxValue);
+
+      this.ctx.fillStyle = color;
+      this.ctx.fillRect(pos.x, pos.y, this.cellSize, this.cellSize);
+
+      // Draw cell border
+      this.ctx.strokeStyle = '#ffffffff';
+      this.ctx.lineWidth = 0.5;
+      this.ctx.strokeRect(pos.x, pos.y, this.cellSize, this.cellSize);
+    }
+
+    // Draw selection overlay
+    if (this.isSelecting || this.currentSelection) {
+      let start, end;
+
+      if (this.isSelecting) {
+        start = Math.min(this.selectionStart, this.selectionEnd);
+        end = Math.max(this.selectionStart, this.selectionEnd);
+      } else if (this.currentSelection) {
+        start = this.currentSelection.start;
+        end = this.currentSelection.end;
+      }
+
+      // Highlight selected cells
+      this.ctx.fillStyle = '#50e15040';
+      for (let i = start; i <= end; i++) {
+        const pos = this.dataIndexToPixel(i);
+        this.ctx.fillRect(pos.x, pos.y, this.cellSize, this.cellSize);
+      }
+    }
+
+    if (this.hoverCellIndex) {
+      // Highlight hovered cells
+      const pos = this.dataIndexToPixel(this.hoverCellIndex);
+      this.ctx.strokeStyle = '#8fb5feff';
+      this.ctx.lineWidth = 0.5;
+      this.ctx.strokeRect(pos.x, pos.y, this.cellSize, this.cellSize);
+    }
+  }
+}
+
+function initHeatmap() {
+  heatmap = new InteractiveHeatmap('heatmap', tree.total, {
+    cellSize: 3,
+    pointsPerColumn: 15,
+    onSelectionChange: (selection) => {
+      const info = document.getElementById('selectionInfo');
+      const startSeconds = (selection.startTimeMs / 1000).toFixed(2);
+      const endSeconds = (selection.endTimeMs / 1000).toFixed(2);
+      const durationSeconds = (selection.durationMs / 1000).toFixed(2);
+      const sumSamples = selection.selectedValues.reduce((a, b) => a + b, 0);
+
+      info.innerHTML = `
+                    <div class="selection-info">
+                        <strong>Selected Range:</strong><br>
+                        Range: ${startSeconds}s - ${endSeconds}s<br>
+                        Duration: ${durationSeconds}s<br>
+                        Samples: ${sumSamples}<br>
+                    </div>
+                `;
+
+      // from_bucket = selection.startIndex
+      // to_bucket = selection.toIndex;
+      performSlowAction(fullRedraw);
+
+      // This is where you'd handle the selection callback in your application
+      console.log('Selection changed:', selection);
+    },
+    onHover: (info) => {
+      hoverTip.textContent = info;
+    }
+  });
+}
+
 //// "Data" is inserted here
 
 console.time("[clj-async-profiler] Data load/eval");
@@ -1299,6 +1588,7 @@ performSlowAction(async function() {
 
   redrawTransformsSection();
   fullRedraw(true);
+  initHeatmap();
   sidebar.style.visibility = 'visible';
   smallbar.style.visibility = 'visible';
 });
