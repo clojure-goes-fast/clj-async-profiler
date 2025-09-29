@@ -20,9 +20,9 @@ executors:
     docker:
       - image: clojure:temurin-21-noble
     <<: *defaults
-  jdk24:
+  jdk25:
     docker:
-      - image: clojure:temurin-24-noble
+      - image: clojure:temurin-25-noble
     <<: *defaults
   jdk8-alpine:
     docker:
@@ -30,7 +30,7 @@ executors:
     <<: *defaults
   jdk21-alpine:
     docker:
-      - image: clojure:temurin-21-alpine
+      - image: clojure:temurin-25-alpine
     <<: *defaults
 
 commands:
@@ -119,7 +119,7 @@ workflows:
           matrix:
             alias: "test-with-flamebin"
             parameters:
-              jdk_version: [jdk24]
+              jdk_version: [jdk25]
               test_flamebin: [true]
           <<: *run_always
       - deploy:
