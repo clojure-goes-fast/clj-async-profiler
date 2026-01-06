@@ -1,5 +1,10 @@
 # Changelog
 
+### 1.7.0 (2026-01-06)
+
+- Update vendored async-profiler libraries to
+  [4.2.1](https://github.com/jvm-profiling-tools/async-profiler/releases/tag/v4.2.1).
+
 ### 1.6.2 (2025-05-07)
 
 - Supply custom executor to HTTP server which preserves Clojure classloader.
