@@ -1,5 +1,10 @@
 # Changelog
 
+### 1.8.0 (2026-07-18)
+
+- [#46](https://github.com/clojure-goes-fast/clj-async-profiler/issues/46): Add
+  Clojure denoising transforms.
+
 ### 1.7.0 (2026-01-06)
 
 - Update vendored async-profiler libraries to
