@@ -264,19 +264,24 @@ function applyReplacement(string, what, replacement, prefix) {
   return s.replaceAll(what, replacement);
 }
 
+const denoiseTransforms =
+      [{type: 'replace', what: /--\d{3,}/g, replacement: '', enabled: true},
+       {type: 'replace', what: /;clojure.core.protocols\/fn(\/G)?/g, replacement: '', enabled: true}]
+
 function transformStacks() {
   console.time("[clj-async-profiler] Transform stacks");
   let diff = isDiffgraph;
   var result;
-  if (userTransforms.length > 0) {
+  let transforms = (isDenoise.checked ? denoiseTransforms : []).concat(userTransforms);
+  if (transforms.length > 0) {
     var xformedMap = {};
     for (var i = 0; i < initialStacks.length; i++) {
       var stack = initialStacks[i];
       var xformedStr = ";" + stack.stackStr + ";";
       var useIt = true;
 
-      for (var t = 0; t < userTransforms.length; t++) {
-        const transform = userTransforms[t];
+      for (var t = 0; t < transforms.length; t++) {
+        const transform = transforms[t];
         if (transform.enabled && transform.what != '') {
           if (transform.type == 'replace') {
             xformedStr = applyReplacement(xformedStr, transform.what,

@@ -30,6 +30,7 @@
       .w-100{width:100%;display:flex}
       .graphCol{flex: 80%; padding:5 10; box-sizing:border-box;}
       #sidebar{flex:20%;}
+      .big-checkbox{margin:6px 7px; width:16px; height:16px;}
       .configBlock{position:fixed; overflow-y:auto; top:1em; bottom:2.5em; padding:10px 6px;
                    background: #fff; box-sizing: border-box; margin-right:1em;
                    border-radius:10px; box-shadow:#00000061 0px 3px 8px;}
@@ -164,6 +165,10 @@
                 <svg><use href="#reverse-icon"/></svg>
               </button>
             </div>
+            <div class="sidebar-row" id="isDenoiseDiv">
+              <div class="w-100"><strong>Denoise Clojure</strong></div>
+              <input type="checkbox" class="big-checkbox" id="isDenoise" name="isDenoise" onchange="onTransformsChangedDontRecreate()" checked>
+            </div>
             <div class="sidebar-row" id="diffModeRow">
               <div class="w-100"><strong>Diff mode</strong></div>
               <button id="diffModeBtn1" class="toggle toggled" onclick="setDiffMode(0)" title="Bidirectional diff">A|B</button>
@@ -174,7 +179,7 @@
             </div>
             <div class="sidebar-row" id="isNormalizedDiv">
               <div class="w-100"><strong>Normalized</strong></div>
-              <input type="checkbox" id="isNormalized" name="isNormalized" onchange="onTransformsChangedDontRecreate()">
+              <input type="checkbox" class="big-checkbox" id="isNormalized" name="isNormalized" onchange="onTransformsChangedDontRecreate()">
             </div>
             <div class="sidebar-row">
               <div class="w-100"><strong>Sort by</strong></div>
