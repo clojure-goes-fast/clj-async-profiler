@@ -1,5 +1,11 @@
 # Changelog
 
+### Unreleased
+
+- Update vendored async-profiler libraries to
+  [4.5](https://github.com/async-profiler/async-profiler/releases/tag/v4.5).
+  Fixes crashes on JDK 26+.
+
 ### 1.8.0 (2026-07-18)
 
 - [#46](https://github.com/clojure-goes-fast/clj-async-profiler/issues/46): Add
