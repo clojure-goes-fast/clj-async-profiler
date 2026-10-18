@@ -61,7 +61,10 @@
       input#isNormalized {weight:16; height:16; margin:6;}
       .chip {background:none; border: 1.5px solid #a5a5a5; border-radius:4px;
              font-size:10px; width:70px; color:#575757; padding: 2px 0;}
-      .chip-row {justify-content:space-evenly; margin-top: 1.5em;}
+      .chip-row {justify-content:space-evenly; margin-top: 1.5em; flex-wrap:wrap; row-gap:4px;}
+      .hlSwatch {display:none; width:12px; height:12px; padding:0; cursor:pointer;
+                 border:1px solid #00000040; border-radius:3px;}
+      .hlMatched {font-size:10px; color:#575757;}
       .xform-odd-block {background:#f4f4f4; margin-left:-3px; margin-right:-3px;
                         padding-left:3px; padding-right:3px}
       .xform-action-row {display:flex; justify-content:space-between; width:100%;
@@ -236,6 +239,7 @@
                 <div class="flx">
                   <input type="checkbox" class="chkEnabled" onchange="onTransformsChangedDontRecreate()" checked>
                   <label class="label">Filter</label>
+                  <button class="btn hlSwatch" title="Change color" onclick="cycleHighlightColor(this)"></button>
                 </div>
                 <div class="flx">
                   <button class="minibtn btn btnMoveUp" title="Move up" onclick="moveTransformUp(this)"><svg><use href="#arrow-up-icon"/></svg></button>
@@ -247,6 +251,7 @@
                   <input class="what w-100 text-field" placeholder="String or /regex/"/><br>
                 </div>
               </div>
+              <div class="hlMatched"></div>
             </div>
           </div>
         </div>

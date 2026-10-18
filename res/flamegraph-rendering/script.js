@@ -168,13 +168,15 @@ function _maybeRegexToString(o) {
   else return o;
 }
 
-function _makeTransform(type, enabled, what, replacement) {
+function _makeTransform(type, enabled, what, replacement, color) {
   let what2 = _stringToMaybeRegex(what);
   let what2Str = what2.toString();
   let prefix = (what2 instanceof RegExp) ?
       _extractRegexPrefix(what2Str) : null;
   if (type == 'replace')
     return { type: type, enabled: enabled, what: what2, replacement: replacement, prefix: prefix}
+  else if (type == 'highlight')
+    return { type: type, enabled: enabled, what: what2, color: color || palette.highlightGroups[0]}
   else
     return { type: type, enabled: enabled, what: what2}
 }
@@ -188,7 +190,8 @@ function applyConfig(config) {
     userTransforms = [];
     for (let configTransform of config.transforms) {
       let t = _makeTransform(configTransform.type, configTransform.enabled != false,
-                             configTransform.what, configTransform.replacement);
+                             configTransform.what, configTransform.replacement,
+                             configTransform.color);
       userTransforms.push(t);
     }
   }
@@ -206,6 +209,7 @@ async function constructPackedConfig() {
   for (let t of userTransforms) {
     let t2 = {type: t.type, what: _maybeRegexToString(t.what)};
     if (t.replacement) t2.replacement = t.replacement;
+    if (t.color) t2.color = t.color;
     if (!t.enabled) t2.enabled = false;
     transformsData.push(t2);
   }
@@ -272,7 +276,9 @@ function transformStacks() {
   console.time("[clj-async-profiler] Transform stacks");
   let diff = isDiffgraph;
   var result;
-  let transforms = (isDenoise.checked ? denoiseTransforms : []).concat(userTransforms);
+  // Highlights don't modify stacks, they are applied during rendering.
+  let transforms = (isDenoise.checked ? denoiseTransforms : [])
+      .concat(userTransforms.filter(t => t.type != 'highlight'));
   if (transforms.length > 0) {
     var xformedMap = {};
     for (var i = 0; i < initialStacks.length; i++) {
@@ -428,6 +434,9 @@ const palette = {
   java      : "#91dc51",
   clojure   : "#8fb5fe",
   highlight : "#ee00ee",
+  // Colors for highlight transforms.
+  highlightGroups : ["#ff8c00", "#00b8d4", "#ffd600",
+                     "#2e9e44", "#a970ff", "#8d6e63"],
   total     : "#999999",
   diff      : { blue    : [51, 119, 255],    // #3377FF
                 neutral : [245, 245, 245],   // #F5F5F5
@@ -478,6 +487,21 @@ function getDiffColor(value) {
 
   // Convert to hex
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
+const _dimmedColors = {};
+
+// Blend a #rrggbb color towards light grey. Used for frames that don't match
+// any highlight transform.
+function dimColor(hex) {
+  let dimmed = _dimmedColors[hex];
+  if (dimmed === undefined) {
+    const n = parseInt(hex.substring(1), 16);
+    const mix = (ch) => decToHex(Math.round(ch + (0xe8 - ch) * 0.5));
+    dimmed = '#' + mix(n >> 16) + mix((n >> 8) & 255) + mix(n & 255);
+    _dimmedColors[hex] = dimmed;
+  }
+  return dimmed;
 }
 
 function generateLevelsSimple(levels, node, title, level, x) {
@@ -644,6 +668,21 @@ function clearHighlight() {
   render(currentRootFrame, currentRootLevel);
 }
 
+function activeHighlightGroups() {
+  let groups = [];
+  userTransforms.forEach((t, idx) => {
+    if (t.type == 'highlight' && t.enabled && t.what != '')
+      groups.push({what: t.what, color: t.color, idx: idx});
+  });
+  return groups;
+}
+
+function findHighlightGroup(title, groups) {
+  for (let g = groups.length - 1; g >= 0; g--)
+    if (match(title, groups[g].what)) return g;
+  return -1;
+}
+
 function render(newRootFrame, newLevel) {
   var totalRenderedFrames = 0;
   console.time("[clj-async-profiler] Render");
@@ -656,6 +695,11 @@ function render(newRootFrame, newLevel) {
 
   const matchedSpans = [];
   const totalMatchedSpans = [];
+
+  function markSpan(spans, f) {
+    if (!(spans[f.left] >= f.width))
+      spans[f.left] = f.width;
+  }
 
   function calculateMatched(spans) {
     let total = 0;
@@ -674,6 +718,12 @@ function render(newRootFrame, newLevel) {
   const x1 = x0 + currentRootFrame.width;
 
   let highlightPattern = highlightState.pattern;
+  // Levels are regenerated whenever transforms change, so the group index
+  // cached on each frame (f.hlGroup) stays valid across zooms and redraws.
+  const hlGroups = activeHighlightGroups();
+  const dimUnmatched = hlGroups.length > 0;
+  const groupMatchedSpans = hlGroups.map(() => []);
+  const groupTotalMatchedSpans = hlGroups.map(() => []);
 
   let lastL = -1;
 
@@ -681,16 +731,28 @@ function render(newRootFrame, newLevel) {
     totalRenderedFrames += 1;
     // if (h == 78) return;
     var frameMatched = highlightPattern && f.title.match(highlightPattern);
-    if (frameMatched && !(totalMatchedSpans[f.left] >= f.width)) {
-      totalMatchedSpans[f.left] = f.width;
+    if (frameMatched) markSpan(totalMatchedSpans, f);
+
+    let group = -1;
+    if (dimUnmatched) {
+      if (f.hlGroup === undefined) f.hlGroup = findHighlightGroup(f.title, hlGroups);
+      group = f.hlGroup;
+      if (group >= 0) markSpan(groupTotalMatchedSpans[group], f);
     }
 
     if (f.left < x1 && f.left + f.width > x0) {
       let color = f.color;
+      let dimmed = false;
+      if (group >= 0) markSpan(groupMatchedSpans[group], f);
+      // Quick-search highlight takes precedence over highlight transforms.
       if (frameMatched) {
-        if (!(matchedSpans[f.left] >= f.width))
-          matchedSpans[f.left] = f.width;
+        markSpan(matchedSpans, f);
         color = palette.highlight;
+      } else if (group >= 0) {
+        color = hlGroups[group].color;
+      } else if (dimUnmatched) {
+        color = dimColor(color);
+        dimmed = true;
       }
 
       if (f.width >= minSamplesToShow && y >= 0 && y <= canvasHeight) {
@@ -707,7 +769,7 @@ function render(newRootFrame, newLevel) {
         if (w >= 21) {
           const chars = Math.floor((w - 6) / 7);
           const title = f.title.length <= chars ? f.title : f.title.substring(0, chars - 1) + "…";
-          c.fillStyle = '#000000';
+          c.fillStyle = dimmed ? '#00000080' : '#000000';
           c.fillText(title, Math.max(l, 0) + 3, y + 12, w - 6);
         }
 
@@ -731,7 +793,7 @@ function render(newRootFrame, newLevel) {
     // Only run binary search if highlight is not enabled. If it is enabled, we
     // want to run through all frames anyway to calculate the correct total
     // matched percentage.
-    if (currentRootLevel > 0 && highlightPattern == null) {
+    if (currentRootLevel > 0 && highlightPattern == null && !dimUnmatched) {
       while (lo < hi) {
         let mid = Math.floor((lo + hi) / 2);
         let frame = frames[mid];
@@ -760,6 +822,14 @@ function render(newRootFrame, newLevel) {
     matchedLabel.textContent = `${pct(calculateMatched(matchedSpans), currentRootFrame.width)} (${pct(calculateMatched(totalMatchedSpans), levels[0][0].width)} total)`;
   } else
     matchContainer.style.display = 'none';
+
+  for (let el of transformsContainer.getElementsByClassName('hlMatched'))
+    el.textContent = '';
+  for (let g = 0; g < hlGroups.length; g++) {
+    const el = transformsContainer.children[hlGroups[g].idx];
+    if (el)
+      oneByClass(el, 'hlMatched').textContent = `Matched: ${pct(calculateMatched(groupMatchedSpans[g]), currentRootFrame.width)} (${pct(calculateMatched(groupTotalMatchedSpans[g]), levels[0][0].width)} total)`;
+  }
   console.log("[clj-async-profiler] Total frames rendered:", totalRenderedFrames);
   console.timeEnd("[clj-async-profiler] Render");
 }
@@ -932,10 +1002,28 @@ function userTransformsSwap(idx1, idx2) {
   userTransforms[idx2] = swap;
 }
 
+// Pick the first palette color not taken by other highlights yet.
+function nextHighlightColor() {
+  const colors = palette.highlightGroups;
+  const used = userTransforms.filter(t => t.type == 'highlight').map(t => t.color);
+  return colors.find(col => !used.includes(col)) || colors[used.length % colors.length];
+}
+
 function addNewTransformParameterized(type, what, replacement) {
   syncTransformsModelWithUI();
-  userTransforms.push(_makeTransform(type, true, what, replacement));
+  let color = (type == 'highlight') ? nextHighlightColor() : null;
+  userTransforms.push(_makeTransform(type, true, what, replacement, color));
   redrawTransformsSection();
+}
+
+function cycleHighlightColor(originator) {
+  const idx = originator.internalId;
+  const colors = palette.highlightGroups;
+  const el = transformsContainer.children[idx];
+  el.hlColor = colors[(colors.indexOf(el.hlColor) + 1) % colors.length];
+  originator.style.background = el.hlColor;
+  userTransforms[idx].color = el.hlColor;
+  render(currentRootFrame, currentRootLevel); // Don't recompute the data model.
 }
 
 function addNewTransform(type) {
@@ -978,7 +1066,8 @@ function syncTransformsModelWithUI() {
     userTransforms.push(
       _makeTransform(transformType, oneByClass(el, 'chkEnabled').checked,
                      oneByClass(el, 'what').value,
-                     transformType == 'replace' ? oneByClass(el, 'replacement').value : null));
+                     transformType == 'replace' ? oneByClass(el, 'replacement').value : null,
+                     el.hlColor));
   }
 }
 
@@ -1008,6 +1097,14 @@ function redrawTransformsSection() {
       addOnEnter(oneByClass(newEl, 'replacement'), onTransformsChangedDontRecreate);
     } else if (transform.type == 'remove')
       oneByClass(newEl, 'label').textContent = "Remove";
+    else if (transform.type == 'highlight') {
+      oneByClass(newEl, 'label').textContent = "Highlight";
+      const swatch = oneByClass(newEl, 'hlSwatch');
+      swatch.style.display = 'inline-block';
+      swatch.style.background = transform.color;
+      swatch.internalId = i;
+      newEl.hlColor = transform.color;
+    }
     oneByClass(newEl, 'chkEnabled').checked = transform.enabled;
 
     oneByClass(newEl, 'chkEnabled').internalId = i;
@@ -1225,6 +1322,12 @@ function menuHighlight(e, frame) {
   applyHighlight("/^" + rx + "$/", true);
 }
 
+function menuAddHighlight(e, frame) {
+  let rx = escapeRegex(frame.title);
+  addNewTransformParameterized('highlight', "/^" + rx + "$/", "");
+  onTransformsChanged();
+}
+
 function menuCopyAsText(e, frame) {
   navigator.clipboard.writeText(frame.title);
 }
@@ -1273,6 +1376,7 @@ const ctxMenuData = [
   {text: 'Copy as text', onclick: menuCopyAsText },
   {text: 'Copy as regex', onclick: menuCopyAsRegex },
   null,
+  {text: 'Pin highlight', onclick: menuAddHighlight },
   {text: 'Filter containing stacks', onclick: menuFilterContaining },
   {text: 'Remove containing stacks', onclick: menuRemoveContaining },
   {text: 'Hide frames above', onclick: menuHideFramesAbove },

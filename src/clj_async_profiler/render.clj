@@ -65,12 +65,13 @@
 ;;;; Flamegraph rendering
 
 (defn- validate-transform [transform]
-  (assert (#{:filter :remove :replace} (:type transform)))
+  (assert (#{:filter :remove :replace :highlight} (:type transform)))
   (assert (contains? #{nil true false} (:enabled transform)))
   (assert (or (string? (:what transform))
               (instance? java.util.regex.Pattern (:what transform))))
   (assert (or (not (= (:type transform) :replace))
-              (string? (:replacement transform)))))
+              (string? (:replacement transform))))
+  (assert (or (nil? (:color transform)) (string? (:color transform)))))
 
 (defn- print-id-to-frame [id->frame]
   (let [sb (StringBuilder.)]
