@@ -2,9 +2,12 @@
 
 ### Unreleased
 
+### 1.9.0 (2026-10-18)
+
 - Update vendored async-profiler libraries to
-  [4.5](https://github.com/async-profiler/async-profiler/releases/tag/v4.5).
-  Fixes crashes on JDK 26+.
+  [4.5](https://github.com/async-profiler/async-profiler/releases/tag/v4.5)
+  (enables JDK27 support).
+- Implement pinned highlights to highlight multiple parts of the flamegraph.
 
 ### 1.8.0 (2026-07-18)
 
