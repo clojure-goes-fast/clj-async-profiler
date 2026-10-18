@@ -24,11 +24,15 @@ executors:
     docker:
       - image: clojure:temurin-25-noble
     <<: *defaults
+  jdk27:
+    docker:
+      - image: clojure:temurin-27-resolute
+    <<: *defaults
   jdk8-alpine:
     docker:
       - image: clojure:temurin-8-alpine
     <<: *defaults
-  jdk21-alpine:
+  jdk25-alpine:
     docker:
       - image: clojure:temurin-25-alpine
     <<: *defaults
@@ -85,6 +89,19 @@ jobs:
             - run: CLOJURE_VERSION=1.11 clojure -X:1.11:test
             - run: CLOJURE_VERSION=1.12 TEST_FLAMEBIN=<< parameters.test_flamebin >> clojure -X:1.12:test
 
+  test-1-13:
+    parameters:
+      jdk_version:
+        type: string
+    executor: << parameters.jdk_version >>
+    steps:
+      - checkout
+      - with_cache:
+          cache_key: "test_1.13_v1"
+          steps:
+            - run: clojure -T:build javac
+            - run: CLOJURE_VERSION=1.13 clojure -X:1.13:test
+
   deploy:
     executor: jdk8
     steps:
@@ -106,25 +123,31 @@ workflows:
       - test:
           matrix:
             parameters:
-              jdk_version: [jdk8, jdk11, jdk17, jdk21]
+              jdk_version: [jdk8, jdk11, jdk17, jdk21, jdk25, jdk27]
+          <<: *run_always
+      - test-1-13:
+          matrix:
+            parameters:
+              jdk_version: [jdk17, jdk21, jdk25, jdk27]
           <<: *run_always
       - test:
           matrix:
             alias: "test-alpine"
             parameters:
-              jdk_version: [jdk8-alpine, jdk21-alpine]
+              jdk_version: [jdk8-alpine, jdk25-alpine]
               is_alpine: [true]
           <<: *run_always
       - test:
           matrix:
             alias: "test-with-flamebin"
             parameters:
-              jdk_version: [jdk25]
+              jdk_version: [jdk27]
               test_flamebin: [true]
           <<: *run_always
       - deploy:
           requires:
             - test
+            - test-1-13
             - test-alpine
             - test-with-flamebin
           filters:
